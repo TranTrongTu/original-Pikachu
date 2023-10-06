@@ -2,7 +2,7 @@ import random, collections, time, sys, copy
 import pygame as pg
 from BFS import bfs
 pg.font.init()
-
+# game python
 SCREEN_WIDTH = 1000
 SCREEN_HEIGHT = 600
 FPS = 10
