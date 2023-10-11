@@ -146,7 +146,7 @@ def gameRunning():
 						# if hint got by player
 						if not(board[hint[0][0]][hint[0][1]] != 0 and bfs(board, hint[0][0], hint[0][1], hint[1][0], hint[1][1])):
 							hint = getHint(board)
-
+					#reset
 					firstSelected = None
 					clickedCards = []
 		pg.display.flip()
