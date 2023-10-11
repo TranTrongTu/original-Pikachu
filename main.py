@@ -122,7 +122,7 @@ def gameRunning():
 		cardI, cardJ = getIndexAtMouse(mouseX, mouseY)
 		if cardI != None and cardJ != None and board[cardI][cardJ] != 0:
 			drawBorderCard(board, cardI, cardJ)
-			
+			# mouse
 			if mouseClicked:
 				mouseClicked = False
 				clickedCards.append((cardI, cardJ))
