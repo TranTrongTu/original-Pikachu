@@ -50,24 +50,23 @@ START_SCREEN_BACKGOUND = pg.transform.scale(pg.image.load("assets/background/3.j
 
 def main():
 	pg.init()
-	global level, lives
 	level = 1
 	lives = 3
+	
 	# startScreen()
 	while level <= MAX_LEVEL:
 	  random.shuffle(LIST_BACKGROUND)
-	  gameRunning()
+	  gameRunning(level, lives)
 	  level += 1
 	  pg.time.wait(1000)
+	# endScreen()
 
-def gameRunning():
-	global level, lives
+def gameRunning(level, lives):
 
 	background = LIST_BACKGROUND[0] # get random background
 	board = getRandomBoard() # get ramdom board of game
 
 	mouseX, mouseY = 0, 0
-	firstSelected = None # store index i, j of first card selected
 	clickedCards = [] # store index cards clicked
 	hint = getHint(board)
 
@@ -79,8 +78,6 @@ def gameRunning():
 		screen.blit(background, (0, 0)) # set background
 		Time.tick(FPS)
 
-		drawBoard(board)
-		drawTimeBar(startTime, bonusTime)
 		drawLives(lives)
 
 		drawClickedCard(board, clickedCards)
@@ -88,7 +85,7 @@ def gameRunning():
 
 		if time.time() - startTime > GAME_TIME + bonusTime: 
 			lives -= 1 
-			if lives == 0:	level = MAX_LEVEL + 1 # game over
+			if lives == 0: level = MAX_LEVEL + 1 # game over
 			return
 		
 		if time.time() - lastGetPoint > HINT_TIME: drawHint(hint)
@@ -100,10 +97,8 @@ def gameRunning():
 			if event.type == pg.MOUSEBUTTONDOWN:
 				mouseX, mouseY = event.pos
 				mouseClicked = True
-			
 			if event.type == pg.KEYUP:
 				if event.key == pg.K_n: # use key n to hack game
-					try:
 						card1I, card1J = hint[0][0], hint[0][1]
 						card2I, card2J = hint[1][0], hint[1][1]
 						board[card1I][card1J] = 0
@@ -111,43 +106,43 @@ def gameRunning():
 						bonusTime += 1
 						updateLevelDifficul(board, level, card1I, card1J, card2I, card2J)
 
-						if isLevelComplete(board):
-							drawBoard(board)
-							pg.display.update()
-							return
+						if isLevelComplete(board): return
+
 						if not(board[card1I][card1J] != 0 and bfs(board, card1I, card1J, card2I, card2J)):
 							hint = getHint(board)
-					except: print(-1)
-
+							while not hint:
+								pg.time.wait(100)
+								resetBoard(board)
+								hint = getHint(board)
 		cardI, cardJ = getIndexAtMouse(mouseX, mouseY)
 		if cardI != None and cardJ != None and board[cardI][cardJ] != 0:
 			drawBorderCard(board, cardI, cardJ)
-			
 			if mouseClicked:
 				mouseClicked = False
 				clickedCards.append((cardI, cardJ))
 				drawClickedCard(board, clickedCards)
-				if firstSelected == None: firstSelected = (cardI, cardJ)
-				else:
-					path = bfs(board, firstSelected[0], firstSelected[1], cardI, cardJ)
+				if len(clickedCards) > 1: # 2 cards was clicked 
+					path = bfs(board, clickedCards[0][0], clickedCards[0][1], cardI, cardJ)
 					if path:
-						board[firstSelected[0]][firstSelected[1]] = 0
+						# delete the same card
+						board[clickedCards[0][0]][clickedCards[0][1]] = 0
 						board[cardI][cardJ] = 0
 						drawPath(path)
 
 						bonusTime += 1
-						lastGetPoint = time.time()
+						lastGetPoint = time.time() # count time hint
 						# if level > 1, upgrade difficulty by moving cards 
-						updateLevelDifficul(board, level, firstSelected[0], firstSelected[1], cardI, cardJ)
+						updateLevelDifficul(board, level, clickedCards[0][0], clickedCards[0][1], cardI, cardJ)
 						if isLevelComplete(board):
-							drawBoard(board)
-							pg.display.update()
 							return
 						# if hint got by player
 						if not(board[hint[0][0]][hint[0][1]] != 0 and bfs(board, hint[0][0], hint[0][1], hint[1][0], hint[1][1])):
 							hint = getHint(board)
+							while not hint:
+								pg.time.wait(100)
+								resetBoard(board)
+								hint = getHint(board)
 					#reset
-					firstSelected = None
 					clickedCards = []
 		pg.display.flip()
 
@@ -306,7 +301,7 @@ def resetBoard(board):
 		for j in range(BOARD_COLUMN):
 			if board[i][j]: currentCard.append(board[i][j])
 	tmp = currentCard[:]
-	while tmp != currentCard:
+	while tmp == currentCard:
 		random.shuffle(currentCard)
 	k = 0
 	for i in range(BOARD_ROW):
