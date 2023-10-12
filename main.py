@@ -5,7 +5,7 @@ pg.font.init()
 
 SCREEN_WIDTH = 1000
 SCREEN_HEIGHT = 600
-FPS = 10
+FPS = 60
 Time = pg.time.Clock()
 screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
@@ -13,38 +13,37 @@ LIST_BACKGROUND = [pg.transform.scale(pg.image.load("assets/background/" + str(i
 
 BOARD_ROW = 9 #7
 BOARD_COLUMN = 14 #12
-NUM_CARD_ON_BOARD = 21
-NUM_SAME_CARD = 4
+NUM_TILE_ON_BOARD = 21
+NUM_SAME_TILE = 4
 
-CARD_WIDTH = 50
-CARD_HEIGHT = 55
+TILE_WIDTH = 50
+TILE_HEIGHT = 55                                                                                            
+MARGIN_X = (SCREEN_WIDTH - TILE_WIDTH * BOARD_COLUMN) // 2
+MARGIN_Y = (SCREEN_HEIGHT - TILE_HEIGHT * BOARD_ROW) // 2
 
-MARGIN_X = (SCREEN_WIDTH - CARD_WIDTH * BOARD_COLUMN) // 2
-MARGIN_Y = (SCREEN_HEIGHT - CARD_HEIGHT * BOARD_ROW) // 2
+NUM_TILE = 33
+LIST_TILE = [0] * (NUM_TILE + 1)
+for i in range(1, NUM_TILE + 1): LIST_TILE[i] = pg.transform.scale(pg.image.load("assets/images/section" + str(i) + ".png"), (TILE_WIDTH, TILE_HEIGHT))
+list_tile[5]
 
+# GAME_TIME = 240
+# HINT_TIME = 20
 
-NUM_CARD = 33
-LIST_CARD = [0] * (NUM_CARD + 1)
-for i in range(1, NUM_CARD + 1): LIST_CARD[i] = pg.transform.scale(pg.image.load("assets/images/section" + str(i) + ".png"), (CARD_WIDTH, CARD_HEIGHT))
+# #time bar
+# TIME_BAR_WIDTH = 300
+# TIME_BAR_HEIGHT = 30
+# TIME_BAR_POS = ((SCREEN_WIDTH - TIME_BAR_WIDTH) // 2, (MARGIN_Y - TIME_BAR_HEIGHT) // 2 + 15)
+# TIME_ICON = pg.transform.scale(pg.image.load("assets/images/section36.png"), (TILE_WIDTH, TILE_HEIGHT))
 
-GAME_TIME = 240
-HINT_TIME = 20
+# MAX_LEVEL = 5
 
-#time bar
-TIME_BAR_WIDTH = 300
-TIME_BAR_HEIGHT = 30
-TIME_BAR_POS = ((SCREEN_WIDTH - TIME_BAR_WIDTH) // 2, (MARGIN_Y - TIME_BAR_HEIGHT) // 2 + 15)
-TIME_ICON = pg.transform.scale(pg.image.load("assets/images/section36.png"), (CARD_WIDTH, CARD_HEIGHT))
+# LIVES_IMAGE = pg.transform.scale(pg.image.load("assets/images/section35.png"), (TILE_WIDTH, TILE_HEIGHT))
 
-MAX_LEVEL = 5
+# FONT_COMICSANSMS = pg.font.SysFont('comicsansms', 50)
+# FONT_TIMENEWROMAN = pg.font.SysFont('timesnewroman', 50)
 
-LIVES_IMAGE = pg.transform.scale(pg.image.load("assets/images/section35.png"), (CARD_WIDTH, CARD_HEIGHT))
-
-FONT_COMICSANSMS = pg.font.SysFont('comicsansms', 50)
-FONT_TIMENEWROMAN = pg.font.SysFont('timesnewroman', 50)
-
-# start screen
-START_SCREEN_BACKGOUND = pg.transform.scale(pg.image.load("assets/background/3.jpg"), (SCREEN_WIDTH, SCREEN_HEIGHT))
+# # start screen
+# START_SCREEN_BACKGOUND = pg.transform.scale(pg.image.load("assets/background/3.jpg"), (SCREEN_WIDTH, SCREEN_HEIGHT))
 
 
 
@@ -52,262 +51,263 @@ def main():
 	pg.init()
 	level = 1
 	lives = 3
-	
-	# startScreen()
-	while level <= MAX_LEVEL:
-	  random.shuffle(LIST_BACKGROUND)
-	  gameRunning(level, lives)
-	  level += 1
-	  pg.time.wait(1000)
-	# endScreen()
+	# start_screen()
+	# while level <= MAX_LEVEL:
+	random.shuffle(LIST_BACKGROUND)
+	playing(level, lives)
+	  # level += 1
+	  # pg.time.wait(1000)
+	# end_screen()
 
-def gameRunning(level, lives):
+def playing(level, lives):
 
 	background = LIST_BACKGROUND[0] # get random background
-	board = getRandomBoard() # get ramdom board of game
+	board = get_random_board() # get ramdom board of game
 
-	mouseX, mouseY = 0, 0
-	clickedCards = [] # store index cards clicked
-	hint = getHint(board)
+	# mouse_x, mouse_y = 0, 0
+	# clicked_tiles = [] # store index cards clicked
+	# hint = get_hint(board)
 
-	lastGetPoint = time.time()
-	startTime = time.time()
-	bonusTime = 0
+	# last_time_get_point = time.time()
+	# start_time = time.time()
+	# bouns_time = 0
 
 	while True:
 		screen.blit(background, (0, 0)) # set background
 		Time.tick(FPS)
+		draw_board(board)
+		# draw_lives(lives)
 
-		drawLives(lives)
+		# draw_clicked_tiles(board, clicked_tiles)
+		# mouse_clicked = False
 
-		drawClickedCard(board, clickedCards)
-		mouseClicked = False
-
-		if time.time() - startTime > GAME_TIME + bonusTime: 
-			lives -= 1 
-			if lives == 0: level = MAX_LEVEL + 1 # game over
-			return
+		# # check time
+		# if time.time() - start_time > GAME_TIME + bouns_time: 
+		# 	lives -= 1 
+		# 	if lives == 0: level = MAX_LEVEL + 1 # game over
+		# 	return
 		
-		if time.time() - lastGetPoint > HINT_TIME: drawHint(hint)
-
+		# if time.time() - last_time_get_point > HINT_TIME: draw_hint(hint)
+		# # check event
 		for event in pg.event.get():
 			if event.type == pg.QUIT: pg.quit(), sys.exit()
-			if event.type == pg.MOUSEMOTION:
-				mouseX, mouseY = event.pos
-			if event.type == pg.MOUSEBUTTONDOWN:
-				mouseX, mouseY = event.pos
-				mouseClicked = True
-			if event.type == pg.KEYUP:
-				if event.key == pg.K_n: # use key n to hack game
-						card1I, card1J = hint[0][0], hint[0][1]
-						card2I, card2J = hint[1][0], hint[1][1]
-						board[card1I][card1J] = 0
-						board[card2I][card2J] = 0
-						bonusTime += 1
-						updateLevelDifficul(board, level, card1I, card1J, card2I, card2J)
+		# 	if event.type == pg.MOUSEMOTION:
+		# 		mouse_x, mouse_y = event.pos
+		# 	if event.type == pg.MOUSEBUTTONDOWN:
+		# 		mouse_x, mouse_y = event.pos
+		# 		mouse_clicked = True
+		# 	if event.type == pg.KEYUP:
+		# 		if event.key == pg.K_k: # use key k to hack game
+		# 				tile1_i, tile1_j = hint[0][0], hint[0][1]
+		# 				tile2_i, tile2_j = hint[1][0], hint[1][1]
+		# 				board[tile1_i][tile1_j] = 0
+		# 				board[tile2_i][tile2_j] = 0
+		# 				bouns_time += 1
+		# 				update_difficulty(board, level, tile1_i, tile1_j, tile2_i, tile2_j)
 
-						if isLevelComplete(board): return
+		# 				if is_level_complete(board): return
 
-						if not(board[card1I][card1J] != 0 and bfs(board, card1I, card1J, card2I, card2J)):
-							hint = getHint(board)
-							while not hint:
-								pg.time.wait(100)
-								resetBoard(board)
-								hint = getHint(board)
-		cardI, cardJ = getIndexAtMouse(mouseX, mouseY)
-		if cardI != None and cardJ != None and board[cardI][cardJ] != 0:
-			drawBorderCard(board, cardI, cardJ)
-			if mouseClicked:
-				mouseClicked = False
-				clickedCards.append((cardI, cardJ))
-				drawClickedCard(board, clickedCards)
-				if len(clickedCards) > 1: # 2 cards was clicked 
-					path = bfs(board, clickedCards[0][0], clickedCards[0][1], cardI, cardJ)
-					if path:
-						# delete the same card
-						board[clickedCards[0][0]][clickedCards[0][1]] = 0
-						board[cardI][cardJ] = 0
-						drawPath(path)
+		# 				if not(board[tile1_i][tile1_j] != 0 and bfs(board, tile1_i, tile1_j, tile2_i, tile2_j)):
+		# 					hint = get_hint(board)
+		# 					while not hint:
+		# 						pg.time.wait(100)
+		# 						reset_board(board)
+		# 						hint = get_hint(board)
+		# #update
+		# tile_i, tile_j = get_index_at_mouse(mouse_x, mouse_y)
+		# if tile_i != None and tile_j != None and board[tile_i][tile_j] != 0:
+		# 	draw_border_tile(board, tile_i, tile_j)
+		# 	if mouse_clicked:
+		# 		mouse_clicked = False
+		# 		clicked_tiles.append((tile_i, tile_j))
+		# 		draw_clicked_tiles(board, clicked_tiles)
+		# 		if len(clicked_tiles) > 1: # 2 cards was clicked 
+		# 			path = bfs(board, clicked_tiles[0][0], clicked_tiles[0][1], tile_i, tile_j)
+		# 			if path:
+		# 				# delete the same card
+		# 				board[clicked_tiles[0][0]][clicked_tiles[0][1]] = 0
+		# 				board[tile_i][tile_j] = 0
+		# 				draw_path(path)
 
-						bonusTime += 1
-						lastGetPoint = time.time() # count time hint
-						# if level > 1, upgrade difficulty by moving cards 
-						updateLevelDifficul(board, level, clickedCards[0][0], clickedCards[0][1], cardI, cardJ)
-						if isLevelComplete(board):
-							return
-						# if hint got by player
-						if not(board[hint[0][0]][hint[0][1]] != 0 and bfs(board, hint[0][0], hint[0][1], hint[1][0], hint[1][1])):
-							hint = getHint(board)
-							while not hint:
-								pg.time.wait(100)
-								resetBoard(board)
-								hint = getHint(board)
-					#reset
-					clickedCards = []
+		# 				bouns_time += 1
+		# 				last_time_get_point = time.time() # count time hint
+		# 				# if level > 1, upgrade difficulty by moving cards 
+		# 				update_difficulty(board, level, clicked_tiles[0][0], clicked_tiles[0][1], tile_i, tile_j)
+		# 				if is_level_complete(board):
+		# 					return
+		# 				# if hint got by player
+		# 				if not(board[hint[0][0]][hint[0][1]] != 0 and bfs(board, hint[0][0], hint[0][1], hint[1][0], hint[1][1])):
+		# 					hint = get_hint(board)
+		# 					while not hint:
+		# 						pg.time.wait(100)
+		# 						reset_board(board)
+		# 						hint = get_hint(board)
+		# 			#reset
+		# 			clicked_tiles = []
 		pg.display.flip()
 
-def getRandomBoard():
-	listIndexCard = list(range(1, NUM_CARD + 1))
-	random.shuffle(listIndexCard)
-	listIndexCard = listIndexCard[:NUM_CARD_ON_BOARD] * NUM_SAME_CARD
-	random.shuffle(listIndexCard)
+def get_random_board():
+	list_index_card = list(range(1, NUM_TILE + 1)) #21
+	random.shuffle(list_index_card)
+	list_index_card = list_index_card[:NUM_TILE_ON_BOARD] * NUM_SAME_TILE #84
+	random.shuffle(list_index_card)
 	board = [[0 for _ in range(BOARD_COLUMN)]for _ in range(BOARD_ROW)]
 	k = 0
 	for i in range(1, BOARD_ROW - 1):
 		for j in range(1, BOARD_COLUMN - 1):
-			board[i][j] = listIndexCard[k]
+			board[i][j] = list_index_card[k]
 			k += 1
 	return board
 
-def getLeftTopCoords(i, j): # get left top coords of card from index i, j
-	x = j * CARD_WIDTH + MARGIN_X
-	y = i * CARD_HEIGHT + MARGIN_Y
+def get_left_top_coords(i, j): # get left top coords of card from index i, j
+	x = j * TILE_WIDTH + MARGIN_X
+	y = i * TILE_HEIGHT + MARGIN_Y
 	return x, y
 
-def getCenterCoords(i, j): # get center coords of card from index i, j
-	x, y = getLeftTopCoords(i, j)
-	return x + CARD_WIDTH // 2, y + CARD_HEIGHT // 2
+def get_center_coords(i, j): # get center coords of card from index i, j
+	x, y = get_left_top_coords(i, j)
+	return x + TILE_WIDTH // 2, y + TILE_HEIGHT // 2
 
-def getIndexAtMouse(x, y): # get index of card at mouse clicked from coords x, y
+def get_index_at_mouse(x, y): # get index of card at mouse clicked from coords x, y
 	if x < MARGIN_X or x > SCREEN_WIDTH - MARGIN_X or y < MARGIN_Y or y > SCREEN_HEIGHT - MARGIN_Y:
 		return None, None
-	return (y - MARGIN_Y) // CARD_HEIGHT, (x - MARGIN_X) // CARD_WIDTH
+	return (y - MARGIN_Y) // TILE_HEIGHT, (x - MARGIN_X) // TILE_WIDTH
 
-def drawBoard(board):
+def draw_board(board):
 	for i in range(1, BOARD_ROW - 1):
 		for j in range(1, BOARD_COLUMN - 1):
 			if board[i][j] != 0:
-				screen.blit(LIST_CARD[board[i][j]], getLeftTopCoords(i, j))
+				screen.blit(LIST_TILE[board[i][j]], get_left_top_coords(i, j))
 
-def drawClickedCard(board, clickedCards):
-	for i, j in clickedCards:
-		x, y = getLeftTopCoords(i, j)
-		darkImage = LIST_CARD[board[i][j]].copy()
+def draw_clicked_tiles(board, clicked_tiles):
+	for i, j in clicked_tiles:
+		x, y = get_left_top_coords(i, j)
+		darkImage = LIST_TILE[board[i][j]].copy()
 		darkImage.fill((60, 60, 60), special_flags = pg.BLEND_RGB_SUB)
 		screen.blit(darkImage, (x, y))
 
-def drawBorderCard(board, i, j):
-	x, y = getLeftTopCoords(i, j)
-	pg.draw.rect(screen, (0, 0, 255),(x - 1, y - 3, CARD_WIDTH + 4, CARD_HEIGHT + 4), 2)
+def draw_border_tile(board, i, j):
+	x, y = get_left_top_coords(i, j)
+	pg.draw.rect(screen, (0, 0, 255),(x - 1, y - 3, TILE_WIDTH + 4, TILE_HEIGHT + 4), 2)
 
-def drawPath(path):
+def draw_path(path):
 	for i in range(len(path) - 1):
-		startPos = (getCenterCoords(path[i][0], path[i][1]))
-		endPos = (getCenterCoords(path[i + 1][0], path[i + 1][1]))
-		pg.draw.line(screen, 'red', startPos, endPos, 4)
+		start_pos = (get_center_coords(path[i][0], path[i][1]))
+		end_pos = (get_center_coords(path[i + 1][0], path[i + 1][1]))
+		pg.draw.line(screen, 'red', start_pos, end_pos, 4)
 		pg.display.update()
 	pg.time.wait(400)
 
-def getHint(board):
+def get_hint(board):
 	hint = [] # stories two tuple
-	cardLocation = collections.defaultdict(list)
+	tiles_location = collections.defaultdict(list)
 	for i in range(BOARD_ROW):
 		for j in range(BOARD_COLUMN):
-			if board[i][j] != 0:
-				cardLocation[board[i][j]].append((i, j))
+			if board[i][j]:
+				tiles_location[board[i][j]].append((i, j))
 	for i in range(BOARD_ROW):
 		for j in range(BOARD_COLUMN):
-			if board[i][j] != 0:
-				for o in cardLocation[board[i][j]]:
+			if board[i][j]:
+				for o in tiles_location[board[i][j]]:
 					if o != (i, j) and bfs(board, i, j, o[0], o[1]):
 						hint.append((i, j))
 						hint.append(o)
 						return hint
 	return []
 
-def drawHint(hint):
+def draw_hint(hint):
 	for i, j in hint:
-		x, y = getLeftTopCoords(i, j)
-		pg.draw.rect(screen, (0, 255, 0),(x - 1, y - 2, CARD_WIDTH + 4, CARD_HEIGHT + 4), 2)
+		x, y = get_left_top_coords(i, j)
+		pg.draw.rect(screen, (0, 255, 0),(x - 1, y - 2, TILE_WIDTH + 4, TILE_HEIGHT + 4), 2)
 
-def drawTimeBar(startTime, bonusTime):
+def draw_time_bar(start_time, bouns_time):
 	screen.blit(TIME_ICON, (TIME_BAR_POS[0] + TIME_BAR_WIDTH + 10, TIME_BAR_POS[1] - 10))
 	pg.draw.rect(screen, 'white', (TIME_BAR_POS[0], TIME_BAR_POS[1], TIME_BAR_WIDTH, TIME_BAR_HEIGHT), 2)
-	timeOut = 1 - (time.time() - startTime - bonusTime) / GAME_TIME # ratio between remaining time and total time
+	timeOut = 1 - (time.time() - start_time - bouns_time) / GAME_TIME # ratio between remaining time and total time
 	innerPos = (TIME_BAR_POS[0] + 2, TIME_BAR_POS[1] + 2) # add border 2
 	innerSize = (TIME_BAR_WIDTH * timeOut - 4, TIME_BAR_HEIGHT - 4) # sub border
 	pg.draw.rect(screen, 'green', (innerPos, innerSize))
 
-def isLevelComplete(board):
+def is_level_complete(board):
 	for i in range(len(board)):
 		for j in range(len(board[0])):
 			if board[i][j] != 0: return False
 	return True
 
-def updateLevelDifficul(board, level, card1I, card1J, card2I, card2J):
+def update_difficulty(board, level, tile1_i, tile1_j, tile2_i, tile2_j):
 	if level == 2: #all card move up
-		for j in (card1J, card2J):
-			newColumn = [0]
+		for j in (tile1_j, tile2_j):
+			new_column = [0]
 			for i in range(BOARD_ROW):
 				if board[i][j] != 0:
-					newColumn.append(board[i][j])
-			while(len(newColumn) < BOARD_ROW): newColumn.append(0)
+					new_column.append(board[i][j])
+			while(len(new_column) < BOARD_ROW): new_column.append(0)
 			for k in range(BOARD_ROW):
-				board[k][j] = newColumn[k]
+				board[k][j] = new_column[k]
 	if level == 3: #all card move down
-		for j in (card1J, card2J):
-			newColumn = []
+		for j in (tile1_j, tile2_j):
+			new_column = []
 			for i in range(BOARD_ROW):
 				if board[i][j] != 0:
-					newColumn.append(board[i][j])
-			while(len(newColumn) < BOARD_ROW - 1): newColumn = [0] + newColumn
-			newColumn.append(0)
+					new_column.append(board[i][j])
+			while(len(new_column) < BOARD_ROW - 1): new_column = [0] + new_column
+			new_column.append(0)
 			for k in range(BOARD_ROW):
-				board[k][j] = newColumn[k]
+				board[k][j] = new_column[k]
 	if level == 4: #all card move left
-		for i in (card1I, card2I):
-			newRow = [0]
+		for i in (tile1_i, tile2_i):
+			new_row = [0]
 			for j in range(BOARD_COLUMN):
 				if board[i][j] != 0:
-					newRow.append(board[i][j])
-			while(len(newRow) < BOARD_COLUMN): newRow.append(0)
+					new_row.append(board[i][j])
+			while(len(new_row) < BOARD_COLUMN): new_row.append(0)
 			for k in range(BOARD_COLUMN):
-				board[i][k] = newRow[k]
+				board[i][k] = new_row[k]
 	if level == 5: #all card move right
-		for i in (card1I, card2I):
-			newRow = []
+		for i in (tile1_i, tile2_i):
+			new_row = []
 			for j in range(BOARD_COLUMN):
 				if board[i][j] != 0:
-					newRow.append(board[i][j])
-			while(len(newRow) < BOARD_COLUMN - 1): newRow = [0] + newRow
-			newRow.append(0)
+					new_row.append(board[i][j])
+			while len(new_row) < BOARD_COLUMN - 1: new_row = [0] + new_row
+			new_row.append(0)
 			for k in range(BOARD_COLUMN):
-				board[i][k] = newRow[k]
+				board[i][k] = new_row[k]
 
-def drawLives(lives):
+def draw_lives(lives):
 	screen.blit(LIVES_IMAGE, (10, 10))
-	livesCount = FONT_COMICSANSMS.render(str(lives), True, 'white')
-	liveCountRect = livesCount.get_rect()
-	screen.blit(livesCount, (70, 0, 50, 55))
+	lives_count = FONT_COMICSANSMS.render(str(lives), True, 'white')
+	live_count_rect = lives_count.get_rect()
+	screen.blit(lives_count, (70, 0, 50, 55))
 
-def startScreen():
+def start_screen():
 	while True:
 		Time.tick(FPS)
 		screen.blit(START_SCREEN_BACKGOUND, (0, 0))
-		newGameText = FONT_TIMENEWROMAN.render("NEW GAME", True, 'white')
-		newGameRect = newGameText.get_rect()
-		newGameRect.center = (SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
-		screen.blit(newGameText, newGameRect)
-		pg.draw.rect(screen, 'white', newGameRect, 4)
+		new_game_text = FONT_TIMENEWROMAN.render("NEW GAME", True, 'white')
+		new_game_rect = new_game_text.get_rect()
+		new_game_rect.center = (SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
+		screen.blit(new_game_text, new_game_rect)
+		pg.draw.rect(screen, 'white', new_game_rect, 4)
 		for event in pg.event.get():
 			if event.type == pg.QUIT:
 				pg.quit()
 				sys.exit()
 		pg.display.flip()
 
-def resetBoard(board):
-	currentCard = []
+def reset_board(board):
+	current_tiles = []
 	for i in range(BOARD_ROW):
 		for j in range(BOARD_COLUMN):
-			if board[i][j]: currentCard.append(board[i][j])
-	tmp = currentCard[:]
-	while tmp == currentCard:
-		random.shuffle(currentCard)
+			if board[i][j]: current_tiles.append(board[i][j])
+	tmp = current_tiles[:]
+	while tmp == current_tiles:
+		random.shuffle(current_tiles)
 	k = 0
 	for i in range(BOARD_ROW):
 		for j in range(BOARD_COLUMN):
 			if board[i][j]:
-				board[i][j] = currentCard[k]
+				board[i][j] = current_tiles[k]
 				k += 1
 	return board
 
