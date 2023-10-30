@@ -1,41 +1,42 @@
-           
+import pygame as pg
 
-# import pygame
-# import sys
+pg.init()
 
-# pygame.init()
+# Tạo cửa sổ Pygame
+screen = pg.display.set_mode((400, 400))
 
-# # Tạo một cửa sổ Pygame
-# screen = pygame.display.set_mode((400, 400))
+# Load ảnh
+image = pg.image.load("your_image.png")
+image_rect = image.get_rect()
 
-# # Tạo một surface cho hình chữ nhật
-# rect_surface = pygame.Surface((400, 400))
-# rect_surface.fill((0, 0, 0))  # Điền màu nền đen vào surface
+# Khởi tạo độ trong suốt ban đầu
+alpha = 0  # Bắt đầu từ không (hoàn toàn trong suốt)
 
-# # Tạo màu gradient từ bên phải qua trái (đỏ đến xanh dương)
-# for x in range(600):
-#     color = (255 - x/3, 0, x/3)  # RGB color
-#     pygame.draw.line(rect_surface, color, (x, 0), (x/3, 30))
+# Tốc độ tỏ dần
+fade_speed = 2
 
-# # Vòng lặp chính
-# running = True
-# while running:
-#     for event in pygame.event.get():
-#         if event.type == pygame.QUIT:
-#             running = False
+running = True
+while running:
+    for event in pg.event.get():
+        if event.type == pg.QUIT:
+            running = False
 
-#     screen.fill((255, 255, 255))  # Điền màu nền trắng
-#     screen.blit(rect_surface, (0, 0))  # Vẽ hình chữ nhật với màu gradient từ bên phải qua trái lên màn hình
+    # Tăng độ trong suốt
+    alpha += fade_speed
 
-#     pygame.display.flip()
+    # Đặt giới hạn, nếu độ trong suốt vượt quá 255, đặt lại về 255
+    if alpha > 255:
+        alpha = 255
 
-# pygame.quit()
-# sys.exit()
+    # Tạo một bản sao hình ảnh với độ trong suốt hiện tại
+    faded_image = image.copy()
+    faded_image.set_alpha(alpha)
 
-a = 10
+    screen.fill((255, 255, 255))
+    screen.blit(faded_image, (100, 100))
+    pg.display.flip()
 
-def cal(x):
-    x = 20
+    # Dừng khi độ trong suốt đạt 255
+    
 
-cal(a)
-print(a)
+pg.quit()

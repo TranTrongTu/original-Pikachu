@@ -27,7 +27,7 @@ NUM_TILE = 33
 LIST_TILE = [0] * (NUM_TILE + 1)
 for i in range(1, NUM_TILE + 1): LIST_TILE[i] = pg.transform.scale(pg.image.load("assets/images/tiles/section" + str(i) + ".png"), (TILE_WIDTH, TILE_HEIGHT))
 
-GAME_TIME = 2
+GAME_TIME = 200
 HINT_TIME = 5
 
 #time bar
@@ -57,13 +57,16 @@ PLAY_IMAGE = pg.image.load("assets/images/button/play.png")
 
 SOUND_IMAGE = pg.transform.scale(pg.image.load("assets/images/button/sound.png"), (50, 50))
 INFO_IMAGE = pg.transform.scale(pg.image.load("assets/images/button/info.png"), (50, 50))
-PANEL_TIME_UP_IMAGE = pg.transform.scale(pg.image.load("assets/images/button/panel_time_up.png"), (300, 200))
+EXIT_IMAGE = pg.transform.scale(pg.image.load("assets/images/button/close.png"), (60, 60))
+PAUSE_PANEL_IMAGE = pg.transform.scale(pg.image.load("assets/images/button/panel_pause.png"), (300, 200))
 REPLAY_BUTTON = pg.image.load("assets/images/button/replay.png")
 HOME_BUTTON = pg.image.load("assets/images/button/exit.png").convert_alpha()
 PAUSE_BUTTON = pg.transform.scale(pg.image.load("assets/images/button/pause.png").convert_alpha(), (50, 50))
 CONTINUE_BUTTON = pg.image.load("assets/images/button/continue.png").convert_alpha()
 GAMEOVER_BACKGROUND = pg.image.load("assets/images/button/gameover.png").convert_alpha()
+INSTRUCTION_PANEL = pg.transform.scale(pg.image.load("assets/images/button/instruction.png"), (700, 469)).convert_alpha()
 TIME_END = 4
+show_instruction = False
 
 #load background music
 pg.mixer.music.load("assets/music/background1.mp3")
@@ -72,13 +75,16 @@ pg.mixer.music.play(-1, 0.0, 5000)
 sound_on = True
 
 #load sound
-click_sound = pg.mixer.Sound("assets/sound/tap.ogg")
+click_sound = pg.mixer.Sound("assets/sound/click_sound.mp3")
+click_sound.set_volume(0.2)
 success_sound = pg.mixer.Sound("assets/sound/success.mp3")
 success_sound.set_volume(0.2)
 fail_sound = pg.mixer.Sound("assets/sound/fail.mp3")
 fail_sound.set_volume(0.2)
 win_sound = pg.mixer.Sound("assets/sound/win.wav")
-win_sound.set_volume(0.3)
+win_sound.set_volume(0.2)
+game_over = pg.mixer.Sound("assets/sound/gameover.mp3")
+game_over.set_volume(0.2)
 def main():
 	#init pygame and module
 	global level, lives
@@ -91,11 +97,12 @@ def main():
 			random.shuffle(LIST_BACKGROUND)
 			playing()
 			level += 1
-			pg.time.wait(500)
+			pg.time.wait(300)
+			pg.mixer.music.unpause()
 			#end
 
 def start_screen():
-	global sound_on
+	global sound_on, music_on, show_instruction
 	while True:
 		
 		Time.tick(FPS)
@@ -122,16 +129,29 @@ def start_screen():
 		info_rect = pg.Rect(SCREEN_WIDTH - 15 - image_width, SCREEN_HEIGHT - 15 - image_height, image_width, image_height)
 		screen.blit(INFO_IMAGE, info_rect)
 
+		# blit exit button
+		image_width, image_height = EXIT_IMAGE.get_size()
+		exit_rect = pg.Rect(SCREEN_WIDTH - 220, 105, image_width, image_height)
+		
+
+		if show_instruction:
+			show_dim_screen()
+			draw_instruction()
+			screen.blit(EXIT_IMAGE, exit_rect)
+
 		#check collide with mouse
-		if play_rect.collidepoint(mouse_x, mouse_y):
+		if play_rect.collidepoint(mouse_x, mouse_y) and not show_instruction:
 			draw_dark_image(PLAY_IMAGE, play_rect, (60, 60, 60))
 		
-		if sound_rect.collidepoint(mouse_x, mouse_y):
+		if sound_rect.collidepoint(mouse_x, mouse_y) and not show_instruction:
 			if sound_on:
 				draw_dark_image(SOUND_IMAGE, sound_rect, (60, 60, 60))
 
-		if info_rect.collidepoint(mouse_x, mouse_y):
-			screen.blit(INFO_IMAGE, info_rect)
+		if info_rect.collidepoint(mouse_x, mouse_y) and not show_instruction:
+				draw_dark_image(INFO_IMAGE, info_rect, (60, 60, 60))
+
+		if exit_rect.collidepoint(mouse_x, mouse_y) and show_instruction:
+				draw_dark_image(EXIT_IMAGE, exit_rect, (60, 60, 60))
 
 		for event in pg.event.get():
 			if event.type == pg.QUIT:
@@ -149,12 +169,27 @@ def start_screen():
 					if sound_on:
 						sound_on = False
 						pg.mixer.music.set_volume(0)
+						success_sound.set_volume(0)
+						fail_sound.set_volume(0)
 						click_sound.set_volume(0)
+						
 					else:
 						sound_on = True
 						pg.mixer.music.set_volume(0.1)
-						click_sound.set_volume(1)
+						success_sound.set_volume(0.2)
+						fail_sound.set_volume(0.2)
+						click_sound.set_volume(0.2)
 
+						
+				if info_rect.collidepoint(mouse_x, mouse_y):
+					show_instruction = True
+					click_sound.play()
+				if exit_rect.collidepoint(mouse_x, mouse_y):
+					show_instruction = False
+					click_sound.play()
+					
+
+						
 		pg.display.flip()
 
 def playing():
@@ -178,6 +213,9 @@ def playing():
 		Time.tick(FPS)
 
 		screen.blit(background, (0, 0)) # set background
+		dim_screen = pg.Surface(screen.get_size(), pg.SRCALPHA)
+		pg.draw.rect(dim_screen, (0, 0, 0, 150), dim_screen.get_rect())
+		screen.blit(dim_screen, (0, 0))
 		draw_board(board)
 		draw_lives(lives, level)
 		draw_time_bar(start_time, bouns_time)
@@ -228,8 +266,9 @@ def playing():
 				level -= 1
 				return
 					 
-			select = panel_time_up(mouse_x, mouse_y, mouse_clicked) # 0 if click replay, 1 if click home, 2 if continue, 3 if nothing
+			select = panel_pause(mouse_x, mouse_y, mouse_clicked) # 0 if click replay, 1 if click home, 2 if continue, 3 if nothing
 			if select == 0: 
+				level -= 1
 				lives -= 1
 				return
 			elif select == 1:
@@ -238,7 +277,7 @@ def playing():
 			elif select == 2: mouse_clicked = False # continue
 
 		# check time get hint
-		if time.time() - last_time_get_point > HINT_TIME and not paused: draw_hint(hint)			
+		if time.time() - last_time_get_point - time_paused > HINT_TIME and not paused: draw_hint(hint)			
 		#update
 		try:
 			tile_i, tile_j = get_index_at_mouse(mouse_x, mouse_y)
@@ -262,7 +301,7 @@ def playing():
 							# if level > 1, upgrade difficulty by moving cards 
 							update_difficulty(board, level, clicked_tiles[0][0], clicked_tiles[0][1], tile_i, tile_j)
 							if is_level_complete(board):
-								win_sound.play()
+								if level == 5:win_sound.play()
 								return
 							# if hint got by player
 							if not(board[hint[0][0]][hint[0][1]] != 0 and bfs(board, hint[0][0], hint[0][1], hint[1][0], hint[1][1])):
@@ -272,7 +311,8 @@ def playing():
 									reset_board(board)
 									hint = get_hint(board)
 						else:
-							fail_sound.play(maxtime = 500)
+							if not (clicked_tiles[0][0] == clicked_tiles[1][0] and clicked_tiles[0][1] == clicked_tiles[1][1]):
+								fail_sound.play(maxtime = 500)
 
 						#reset
 						clicked_tiles = []
@@ -319,9 +359,11 @@ def draw_dark_image(image, image_rect, color):
 def draw_clicked_tiles(board, clicked_tiles):
 	for i, j in clicked_tiles:
 		x, y = get_left_top_coords(i, j)
-		darkImage = LIST_TILE[board[i][j]].copy()
-		darkImage.fill((60, 60, 60), special_flags = pg.BLEND_RGB_SUB)
-		screen.blit(darkImage, (x, y))
+		try:
+			darkImage = LIST_TILE[board[i][j]].copy()
+			darkImage.fill((60, 60, 60), special_flags = pg.BLEND_RGB_SUB)
+			screen.blit(darkImage, (x, y))
+		except: pass
 
 def draw_border_tile(board, i, j):
 	x, y = get_left_top_coords(i, j)
@@ -355,12 +397,13 @@ def get_hint(board):
 def draw_hint(hint):
 	for i, j in hint:
 		x, y = get_left_top_coords(i, j)
-		pg.draw.rect(screen, (0, 255, 0),(x - 1, y - 2, TILE_WIDTH + 4, TILE_HEIGHT + 4), 2)
+		pg.draw.rect(screen, (0, 255, 0),(x - +1, y - 2, TILE_WIDTH + 4, TILE_HEIGHT + 4), 2)
 
 def draw_time_bar(start_time, bouns_time):
 	global time_start_paused, time_paused
-	# screen.blit(TIME_ICON, (TIME_BAR_POS[0] + TIME_BAR_WIDTH + 10, TIME_BAR_POS[1] - 10))
-	pg.draw.rect(screen, 'white', (TIME_BAR_POS[0], TIME_BAR_POS[1], TIME_BAR_WIDTH, TIME_BAR_HEIGHT), 2)
+# rgba(52,172,230,255)
+# rgba(18,141,208,255)
+	pg.draw.rect(screen, (255,255,255,5), (TIME_BAR_POS[0], TIME_BAR_POS[1], TIME_BAR_WIDTH, TIME_BAR_HEIGHT), 2, border_radius = 20)
 	timeOut = 1 - (time.time() - start_time - bouns_time - time_paused) / GAME_TIME # ratio between remaining time and total time
 	if paused:
 		if not time_start_paused: time_start_paused = time.time()
@@ -373,7 +416,7 @@ def draw_time_bar(start_time, bouns_time):
 
 	innerPos = (TIME_BAR_POS[0] + 2, TIME_BAR_POS[1] + 2)
 	innerSize = (TIME_BAR_WIDTH * timeOut - 4, TIME_BAR_HEIGHT - 4)
-	pg.draw.rect(screen, 'green', (innerPos, innerSize))
+	pg.draw.rect(screen, 'green', (innerPos, innerSize), border_radius = 20)
 
 def is_level_complete(board):
 	for i in range(len(board)):
@@ -459,34 +502,42 @@ def show_dim_screen():
 	pg.draw.rect(dim_screen, (0, 0, 0, 220), dim_screen.get_rect())
 	screen.blit(dim_screen, (0, 0))
 	
-def panel_time_up(mouse_x, mouse_y, mouse_clicked):
+def panel_pause(mouse_x, mouse_y, mouse_clicked):
 	global lives, paused
-	panel_rect = pg.Rect(0, 0, *PANEL_TIME_UP_IMAGE.get_size())
+	panel_rect = pg.Rect(0, 0, *PAUSE_PANEL_IMAGE.get_size())
 	panel_rect.center = (SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
-	screen.blit(PANEL_TIME_UP_IMAGE, panel_rect)
+	screen.blit(PAUSE_PANEL_IMAGE, panel_rect)
 
 	continue_rect = pg.Rect(0, 0, *CONTINUE_BUTTON.get_size())
 	continue_rect.center = (panel_rect.centerx, panel_rect.centery)
+	screen.blit(CONTINUE_BUTTON, continue_rect)
 	if continue_rect.collidepoint(mouse_x, mouse_y):
-		screen.blit(CONTINUE_BUTTON, continue_rect)
+		draw_dark_image(CONTINUE_BUTTON, continue_rect, (60, 60, 60))
 		if mouse_clicked:
+			draw_dark_image(CONTINUE_BUTTON, continue_rect, (120, 120, 120))
 			paused = False
+			click_sound.play()
 			return 2
-	else: screen.blit(CONTINUE_BUTTON, continue_rect)
 
 	replay_rect = pg.Rect(0, 0, *REPLAY_BUTTON.get_size())
 	replay_rect.center = (panel_rect.centerx - 80, panel_rect.centery)
+	screen.blit(REPLAY_BUTTON, replay_rect)
 	if replay_rect.collidepoint(mouse_x, mouse_y):
-		screen.blit(REPLAY_BUTTON, replay_rect)
-		if mouse_clicked: return 0
-	else: screen.blit(REPLAY_BUTTON, replay_rect)
+		draw_dark_image(REPLAY_BUTTON, replay_rect, (60, 60, 60))
+		if mouse_clicked:
+			draw_dark_image(REPLAY_BUTTON, replay_rect, (120, 120, 120))
+			click_sound.play()
+			return 0
 
 	home_rect = pg.Rect(0, 0, *HOME_BUTTON.get_size())
 	home_rect.center = (panel_rect.centerx + 80, panel_rect.centery)
+	screen.blit(HOME_BUTTON, home_rect)
 	if home_rect.collidepoint(mouse_x, mouse_y):
-		screen.blit(HOME_BUTTON, home_rect)
-		if mouse_clicked: return 1
-	else: screen.blit(HOME_BUTTON, home_rect)
+		draw_dark_image(HOME_BUTTON, home_rect, (60, 60, 60))
+		if mouse_clicked:
+			draw_dark_image(HOME_BUTTON, home_rect, (120, 120, 120))
+			click_sound.play()
+			return 1
 
 	return 3
 
@@ -496,11 +547,16 @@ def draw_pause_button(mouse_x, mouse_y, mouse_clicked):
 	pause_rect.center = (SCREEN_WIDTH - 220, 35)
 	screen.blit(PAUSE_BUTTON, pause_rect)
 	if pause_rect.collidepoint(mouse_x, mouse_y):
-		
 		if not paused: draw_dark_image(PAUSE_BUTTON, pause_rect, (60, 60, 60))
 		if mouse_clicked:
 			mouse_clicked = False
 			paused = True
+			click_sound.play()
+
+def draw_instruction():
+	panel_rect = pg.Rect(0, 0, *INSTRUCTION_PANEL.get_size())
+	panel_rect.center = (SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
+	screen.blit(INSTRUCTION_PANEL, panel_rect)
 
 if __name__ == '__main__':
 	main()
