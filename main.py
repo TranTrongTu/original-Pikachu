@@ -27,8 +27,8 @@ NUM_TILE = 33
 LIST_TILE = [0] * (NUM_TILE + 1)
 for i in range(1, NUM_TILE + 1): LIST_TILE[i] = pg.transform.scale(pg.image.load("assets/images/tiles/section" + str(i) + ".png"), (TILE_WIDTH, TILE_HEIGHT))
 
-GAME_TIME = 200
-HINT_TIME = 5
+GAME_TIME = 180
+HINT_TIME = 20
 
 #time bar
 TIME_BAR_WIDTH = 500
@@ -64,8 +64,9 @@ HOME_BUTTON = pg.image.load("assets/images/button/exit.png").convert_alpha()
 PAUSE_BUTTON = pg.transform.scale(pg.image.load("assets/images/button/pause.png").convert_alpha(), (50, 50))
 CONTINUE_BUTTON = pg.image.load("assets/images/button/continue.png").convert_alpha()
 GAMEOVER_BACKGROUND = pg.image.load("assets/images/button/gameover.png").convert_alpha()
+WIN_BACKGROUND = pg.image.load("assets/images/button/win1.png").convert_alpha()
 INSTRUCTION_PANEL = pg.transform.scale(pg.image.load("assets/images/button/instruction.png"), (700, 469)).convert_alpha()
-TIME_END = 4
+TIME_END = 6
 show_instruction = False
 
 #load background music
@@ -81,10 +82,10 @@ success_sound = pg.mixer.Sound("assets/sound/success.mp3")
 success_sound.set_volume(0.2)
 fail_sound = pg.mixer.Sound("assets/sound/fail.mp3")
 fail_sound.set_volume(0.2)
-win_sound = pg.mixer.Sound("assets/sound/win.wav")
+win_sound = pg.mixer.Sound("assets/sound/win.mp3")
 win_sound.set_volume(0.2)
-game_over = pg.mixer.Sound("assets/sound/gameover.mp3")
-game_over.set_volume(0.2)
+game_over_sound = pg.mixer.Sound("assets/sound/gameover.wav")
+game_over_sound.set_volume(0.2)
 def main():
 	#init pygame and module
 	global level, lives
@@ -98,7 +99,7 @@ def main():
 			playing()
 			level += 1
 			pg.time.wait(300)
-			pg.mixer.music.unpause()
+			pg.mixer.music.play()
 			#end
 
 def start_screen():
@@ -132,6 +133,7 @@ def start_screen():
 		# blit exit button
 		image_width, image_height = EXIT_IMAGE.get_size()
 		exit_rect = pg.Rect(SCREEN_WIDTH - 220, 105, image_width, image_height)
+
 		
 
 		if show_instruction:
@@ -256,6 +258,8 @@ def playing():
 			show_dim_screen()
 			if is_time_up == 0: #game over
 				level = MAX_LEVEL + 1
+				game_over_sound.play()
+				pg.mixer.music.pause()
 				start_end = time.time()
 				while time.time() - start_end <= TIME_END:
 					screen.blit(GAMEOVER_BACKGROUND, (0, 0))
@@ -301,7 +305,21 @@ def playing():
 							# if level > 1, upgrade difficulty by moving cards 
 							update_difficulty(board, level, clicked_tiles[0][0], clicked_tiles[0][1], tile_i, tile_j)
 							if is_level_complete(board):
-								if level == 5:win_sound.play()
+								if level == 5:
+									pg.mixer.music.pause()
+									fade_speed = 2
+									alpha = 0
+									time_win = 10
+									tmp = time.time()
+									win_sound.play(maxtime = 10000)
+									show_dim_screen()
+									while time.time() - tmp < 10:
+										alpha += fade_speed
+										if alpha > 255: alpha = 255
+										tmp_image = WIN_BACKGROUND.copy()
+										tmp_image.set_alpha(alpha)
+										screen.blit(tmp_image, (180, 70))
+										pg.display.flip()
 								return
 							# if hint got by player
 							if not(board[hint[0][0]][hint[0][1]] != 0 and bfs(board, hint[0][0], hint[0][1], hint[1][0], hint[1][1])):
