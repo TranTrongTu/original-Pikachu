@@ -225,6 +225,17 @@ def playing():
 
 		mouse_clicked = False
 
+		if lives == 0:
+			show_dim_screen()
+			level = MAX_LEVEL + 1
+			game_over_sound.play()
+			pg.mixer.music.pause()
+			start_end = time.time()
+			while time.time() - start_end <= TIME_END:
+				screen.blit(GAMEOVER_BACKGROUND, (0, 0))
+				pg.display.flip()
+			return
+
 		# check event
 		for event in pg.event.get():
 			if event.type == pg.QUIT: pg.quit(), sys.exit()
@@ -257,14 +268,7 @@ def playing():
 		if paused:
 			show_dim_screen()
 			if is_time_up == 0: #game over
-				level = MAX_LEVEL + 1
-				game_over_sound.play()
-				pg.mixer.music.pause()
-				start_end = time.time()
-				while time.time() - start_end <= TIME_END:
-					screen.blit(GAMEOVER_BACKGROUND, (0, 0))
-					pg.display.flip()
-				return
+				lives -= 1
 			elif is_time_up == 1:
 				lives -= 1
 				level -= 1
@@ -272,9 +276,10 @@ def playing():
 					 
 			select = panel_pause(mouse_x, mouse_y, mouse_clicked) # 0 if click replay, 1 if click home, 2 if continue, 3 if nothing
 			if select == 0: 
-				level -= 1
 				lives -= 1
-				return
+				if lives > 0:
+					level -= 1
+					return
 			elif select == 1:
 				level = MAX_LEVEL + 1
 				return 
@@ -419,8 +424,6 @@ def draw_hint(hint):
 
 def draw_time_bar(start_time, bouns_time):
 	global time_start_paused, time_paused
-# rgba(52,172,230,255)
-# rgba(18,141,208,255)
 	pg.draw.rect(screen, (255,255,255,5), (TIME_BAR_POS[0], TIME_BAR_POS[1], TIME_BAR_WIDTH, TIME_BAR_HEIGHT), 2, border_radius = 20)
 	timeOut = 1 - (time.time() - start_time - bouns_time - time_paused) / GAME_TIME # ratio between remaining time and total time
 	if paused:
@@ -511,7 +514,7 @@ def check_time(start_time, bouns_time):
 	# check game lost
 	if time.time() - start_time - time_paused > GAME_TIME + bouns_time: # time up
 		paused = True
-		if lives == 1: return 0
+		if lives <= 1: return 0
 		return 1
 	return 2
 
