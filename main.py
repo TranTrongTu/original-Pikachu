@@ -561,27 +561,8 @@ def playing():
         # draw pause button and hint button 
         mouse_clicked = draw_pause_button(mouse_x, mouse_y, mouse_clicked)
         mouse_clicked = draw_hint_button(mouse_x, mouse_y, mouse_clicked, board)
-		
-        # # Check if the Reset Button is clicked
-        # image_width, image_height = RESET_BUTTON.get_size()
-        # reset_rect = pg.Rect(15, 15, image_width, image_height)  # position in top-left corner
-        # screen.blit(RESET_BUTTON, reset_rect)
-
-        # # Highlight Reset Button when hovered
-        # if reset_rect.collidepoint(mouse_x, mouse_y):
-        #     draw_dark_image(RESET_BUTTON, reset_rect, (60, 60, 60))
-
-        # # If the Reset Button is clicked, reset the board
-        # if reset_rect.collidepoint(mouse_x, mouse_y) and mouse_clicked:
-        #     print("Reset button clicked!")  # Debugging line
-        #     click_sound.play()
-        #     draw_dark_image(RESET_BUTTON, reset_rect, (120, 120, 120))
-        #     pg.display.flip()
-        #     pg.time.wait(200)
-        #     reset_board(board)  # Shuffle the tiles when clicked
-        #     hint = get_hint(board)  # Recalculate the hint after reset
-
-    
+	
+ 
         is_time_up = check_time(start_time, bouns_time)  # 0 if game over, 1 if lives -= 1, 2 if nothing
         if paused:
             show_dim_screen()
