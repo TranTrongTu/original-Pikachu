@@ -585,9 +585,6 @@ def playing():
             elif select == 2:
                 mouse_clicked = False  # continue
 
-        # Check time for hint
-        if time.time() - last_time_get_point - time_paused > HINT_TIME and not paused:
-            draw_hint(hint)
 
         # Update tile selection logic
         try:
@@ -610,6 +607,9 @@ def playing():
                             bouns_time += 1
                             last_time_get_point = time.time()  # Count time for hint
 
+                            show_hint = False # reset hint when tiles are matched
+                            
+                            current_hint = None 
                             # If level > 1, upgrade difficulty by moving cards
                             update_difficulty(board, level, clicked_tiles[0][0], clicked_tiles[0][1], tile_i, tile_j)
                             if is_level_complete(board):
@@ -630,13 +630,6 @@ def playing():
                                         screen.blit(tmp_image, (180, 70))
                                         pg.display.flip()
                                 return
-                            # If hint got by player
-                            if not (board[hint[0][0]][hint[0][1]] != 0 and bfs(board, hint[0][0], hint[0][1], hint[1][0], hint[1][1])):
-                                hint = get_hint(board)
-                                while not hint:
-                                    pg.time.wait(100)
-                                    reset_board(board)
-                                    hint = get_hint(board)
                         else:
                             if not (clicked_tiles[0][0] == clicked_tiles[1][0] and clicked_tiles[0][1] == clicked_tiles[1][1]):
                                 fail_sound.play(maxtime=500)
