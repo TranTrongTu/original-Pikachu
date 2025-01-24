@@ -172,7 +172,7 @@ def draw_path(path):
 	pg.time.wait(400)
 
 # Draws a green border around specific tiles as hints:
-def draw_hint(hint):
+def draw_hint(hint): # vẽ ô màu xanh xung quanh ô gợi ý 
 	for i, j in hint:
 		x, y = get_left_top_coords(i, j)
 		pg.draw.rect(screen, (0, 255, 0),(x - +1, y - 2, TILE_WIDTH + 4, TILE_HEIGHT + 4), 2)
@@ -222,6 +222,7 @@ def draw_pause_button(mouse_x, mouse_y, mouse_clicked):
 			mouse_clicked = False
 			paused = True
 			click_sound.play()
+	return mouse_clicked
 
 # vẽ nút gợi ý 
 def draw_hint_button(mouse_x, mouse_y, mouse_clicked, board):
@@ -480,184 +481,191 @@ def start_screen():
 		pg.display.flip()
 
 
+# Handles the main game loop where gameplay occurs:
 def playing():
     global level, lives, paused, time_start_paused, last_time_get_point, time_paused
     paused = False
-    # time_start_paused = 0
-    # time_paused = 0
+    time_start_paused = 0
+    time_paused = 0
 
-    # background = LIST_BACKGROUND[0]  # get random background
-    # board = get_random_board()  # get random board of game
+    background = LIST_BACKGROUND[0]  # get random background
+    board = get_random_board()  # get random board of game
 
-    # mouse_x, mouse_y = 0, 0
-    # clicked_tiles = []  # store index cards clicked
-    # hint = get_hint(board)
+    mouse_x, mouse_y = 0, 0
+    clicked_tiles = []  # store index cards clicked
+    hint = get_hint(board)
 
-    # last_time_get_point = time.time()
-    # start_time = time.time()
-    # bouns_time = 0
+    last_time_get_point = time.time()
+    start_time = time.time()
+    bouns_time = 0
 
-    # while True:
-    #     Time.tick(FPS)
+    while True:
+        Time.tick(FPS)
 
-    #     screen.blit(background, (0, 0))  # set background
-    #     dim_screen = pg.Surface(screen.get_size(), pg.SRCALPHA)
-    #     pg.draw.rect(dim_screen, (0, 0, 0, 150), dim_screen.get_rect())
-    #     screen.blit(dim_screen, (0, 0))
-    #     draw_board(board)
-    #     draw_lives(lives, level)
-    #     draw_time_bar(start_time, bouns_time)
-    #     draw_clicked_tiles(board, clicked_tiles)
+        screen.blit(background, (0, 0))  # set background
+        dim_screen = pg.Surface(screen.get_size(), pg.SRCALPHA)
+        pg.draw.rect(dim_screen, (0, 0, 0, 150), dim_screen.get_rect())
+        screen.blit(dim_screen, (0, 0))
+        draw_board(board)
+        draw_lives(lives, level)
+        draw_time_bar(start_time, bouns_time)
+        draw_clicked_tiles(board, clicked_tiles)
 
-    #     # Initialize mouse clicked flag
-    #     mouse_clicked = False
+     # if player click a hint button
+        if show_hint and current_hint:
+            draw_hint(current_hint)
+        
+        # Initialize mouse clicked flag
+        mouse_clicked = False
+        
+        if lives == 0:
+            show_dim_screen()
+            level = MAX_LEVEL + 1
+            game_over_sound.play()
+            pg.mixer.music.pause()
+            start_end = time.time()
+            while time.time() - start_end <= TIME_END:
+                screen.blit(GAMEOVER_BACKGROUND, (0, 0))
+                pg.display.flip()
+            return
+        
+        # Handle events
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                pg.quit()
+                sys.exit()
+            if event.type == pg.MOUSEMOTION:
+                mouse_x, mouse_y = event.pos
+            if event.type == pg.MOUSEBUTTONDOWN:
+                if event.button == 1:  # Left mouse button clicked
+                    mouse_x, mouse_y = event.pos
+                    mouse_clicked = True
+            if event.type == pg.KEYUP:
+                if event.key == pg.K_k:  # Use key 'k' to hack game
+                    tile1_i, tile1_j = hint[0][0], hint[0][1]
+                    tile2_i, tile2_j = hint[1][0], hint[1][1]
+                    board[tile1_i][tile1_j] = 0
+                    board[tile2_i][tile2_j] = 0
+                    bouns_time += 1
+                    update_difficulty(board, level, tile1_i, tile1_j, tile2_i, tile2_j)
 
-    #     # Handle events
-    #     for event in pg.event.get():
-    #         if event.type == pg.QUIT:
-    #             pg.quit()
-    #             sys.exit()
-    #         if event.type == pg.MOUSEMOTION:
-    #             mouse_x, mouse_y = event.pos
-    #         if event.type == pg.MOUSEBUTTONDOWN:
-    #             if event.button == 1:  # Left mouse button clicked
-    #                 mouse_x, mouse_y = event.pos
-    #                 mouse_clicked = True
-    #         if event.type == pg.KEYUP:
-    #             if event.key == pg.K_k:  # Use key 'k' to hack game
-    #                 tile1_i, tile1_j = hint[0][0], hint[0][1]
-    #                 tile2_i, tile2_j = hint[1][0], hint[1][1]
-    #                 board[tile1_i][tile1_j] = 0
-    #                 board[tile2_i][tile2_j] = 0
-    #                 bouns_time += 1
-    #                 update_difficulty(board, level, tile1_i, tile1_j, tile2_i, tile2_j)
+                    if is_level_complete(board): return
 
-    #                 if is_level_complete(board): return
+                    if not (board[tile1_i][tile1_j] != 0 and bfs(board, tile1_i, tile1_j, tile2_i, tile2_j)):
+                        hint = get_hint(board)
+                        while not hint:
+                            pg.time.wait(100)
+                            reset_board(board)
+                            hint = get_hint(board)
+                
+        # draw pause button and hint button 
+        mouse_clicked = draw_pause_button(mouse_x, mouse_y, mouse_clicked)
+        mouse_clicked = draw_hint_button(mouse_x, mouse_y, mouse_clicked, board)
+		
+        # # Check if the Reset Button is clicked
+        # image_width, image_height = RESET_BUTTON.get_size()
+        # reset_rect = pg.Rect(15, 15, image_width, image_height)  # position in top-left corner
+        # screen.blit(RESET_BUTTON, reset_rect)
 
-    #                 if not (board[tile1_i][tile1_j] != 0 and bfs(board, tile1_i, tile1_j, tile2_i, tile2_j)):
-    #                     hint = get_hint(board)
-    #                     while not hint:
-    #                         pg.time.wait(100)
-    #                         reset_board(board)
-    #                         hint = get_hint(board)
+        # # Highlight Reset Button when hovered
+        # if reset_rect.collidepoint(mouse_x, mouse_y):
+        #     draw_dark_image(RESET_BUTTON, reset_rect, (60, 60, 60))
 
-    #     # Check if the Reset Button is clicked
-    #     image_width, image_height = RESET_BUTTON.get_size()
-    #     reset_rect = pg.Rect(15, 15, image_width, image_height)  # position in top-left corner
-    #     screen.blit(RESET_BUTTON, reset_rect)
+        # # If the Reset Button is clicked, reset the board
+        # if reset_rect.collidepoint(mouse_x, mouse_y) and mouse_clicked:
+        #     print("Reset button clicked!")  # Debugging line
+        #     click_sound.play()
+        #     draw_dark_image(RESET_BUTTON, reset_rect, (120, 120, 120))
+        #     pg.display.flip()
+        #     pg.time.wait(200)
+        #     reset_board(board)  # Shuffle the tiles when clicked
+        #     hint = get_hint(board)  # Recalculate the hint after reset
 
-    #     # Highlight Reset Button when hovered
-    #     if reset_rect.collidepoint(mouse_x, mouse_y):
-    #         draw_dark_image(RESET_BUTTON, reset_rect, (60, 60, 60))
+    
+        is_time_up = check_time(start_time, bouns_time)  # 0 if game over, 1 if lives -= 1, 2 if nothing
+        if paused:
+            show_dim_screen()
+            if is_time_up == 0:  # game over
+                lives -= 1
+            elif is_time_up == 1:
+                lives -= 1
+                level -= 1
+                return
 
-    #     # If the Reset Button is clicked, reset the board
-    #     if reset_rect.collidepoint(mouse_x, mouse_y) and mouse_clicked:
-    #         print("Reset button clicked!")  # Debugging line
-    #         click_sound.play()
-    #         draw_dark_image(RESET_BUTTON, reset_rect, (120, 120, 120))
-    #         pg.display.flip()
-    #         pg.time.wait(200)
-    #         reset_board(board)  # Shuffle the tiles when clicked
-    #         hint = get_hint(board)  # Recalculate the hint after reset
+            select = panel_pause(mouse_x, mouse_y, mouse_clicked)  # 0 if click replay, 1 if click home, 2 if continue, 3 if nothing
+            if select == 0:
+                lives -= 1
+                if lives > 0:
+                    level -= 1
+                    return
+            elif select == 1:
+                level = MAX_LEVEL + 1
+                return
+            elif select == 2:
+                mouse_clicked = False  # continue
 
-    #     # Rest of the game logic (e.g., pause handling, time check, etc.)
-    #     if lives == 0:
-    #         show_dim_screen()
-    #         level = MAX_LEVEL + 1
-    #         game_over_sound.play()
-    #         pg.mixer.music.pause()
-    #         start_end = time.time()
-    #         while time.time() - start_end <= TIME_END:
-    #             screen.blit(GAMEOVER_BACKGROUND, (0, 0))
-    #             pg.display.flip()
-    #         return
+        # Check time for hint
+        if time.time() - last_time_get_point - time_paused > HINT_TIME and not paused:
+            draw_hint(hint)
 
-    #     draw_pause_button(mouse_x, mouse_y, mouse_clicked)
+        # Update tile selection logic
+        try:
+            tile_i, tile_j = get_index_at_mouse(mouse_x, mouse_y)
+            if board[tile_i][tile_j] != 0 and not paused:
+                draw_border_tile(board, tile_i, tile_j)
+                if mouse_clicked:
+                    mouse_clicked = False
+                    clicked_tiles.append((tile_i, tile_j))
+                    draw_clicked_tiles(board, clicked_tiles)
+                    if len(clicked_tiles) > 1:  # 2 cards were clicked
+                        path = bfs(board, clicked_tiles[0][0], clicked_tiles[0][1], tile_i, tile_j)
+                        if path:
+                            # Delete the same card
+                            board[clicked_tiles[0][0]][clicked_tiles[0][1]] = 0
+                            board[tile_i][tile_j] = 0
+                            success_sound.play(maxtime=1500)
+                            draw_path(path)
 
-    #     is_time_up = check_time(start_time, bouns_time)  # 0 if game over, 1 if lives -= 1, 2 if nothing
-    #     if paused:
-    #         show_dim_screen()
-    #         if is_time_up == 0:  # game over
-    #             lives -= 1
-    #         elif is_time_up == 1:
-    #             lives -= 1
-    #             level -= 1
-    #             return
+                            bouns_time += 1
+                            last_time_get_point = time.time()  # Count time for hint
 
-    #         select = panel_pause(mouse_x, mouse_y, mouse_clicked)  # 0 if click replay, 1 if click home, 2 if continue, 3 if nothing
-    #         if select == 0:
-    #             lives -= 1
-    #             if lives > 0:
-    #                 level -= 1
-    #                 return
-    #         elif select == 1:
-    #             level = MAX_LEVEL + 1
-    #             return
-    #         elif select == 2:
-    #             mouse_clicked = False  # continue
+                            # If level > 1, upgrade difficulty by moving cards
+                            update_difficulty(board, level, clicked_tiles[0][0], clicked_tiles[0][1], tile_i, tile_j)
+                            if is_level_complete(board):
+                                if level == 5:
+                                    pg.mixer.music.pause()
+                                    fade_speed = 2
+                                    alpha = 0
+                                    time_win = 10
+                                    tmp = time.time()
+                                    win_sound.play(maxtime=10000)
+                                    show_dim_screen()
+                                    while time.time() - tmp < 10:
+                                        alpha += fade_speed
+                                        if alpha > 255:
+                                            alpha = 255
+                                        tmp_image = WIN_BACKGROUND.copy()
+                                        tmp_image.set_alpha(alpha)
+                                        screen.blit(tmp_image, (180, 70))
+                                        pg.display.flip()
+                                return
+                            # If hint got by player
+                            if not (board[hint[0][0]][hint[0][1]] != 0 and bfs(board, hint[0][0], hint[0][1], hint[1][0], hint[1][1])):
+                                hint = get_hint(board)
+                                while not hint:
+                                    pg.time.wait(100)
+                                    reset_board(board)
+                                    hint = get_hint(board)
+                        else:
+                            if not (clicked_tiles[0][0] == clicked_tiles[1][0] and clicked_tiles[0][1] == clicked_tiles[1][1]):
+                                fail_sound.play(maxtime=500)
 
-    #     # Check time for hint
-    #     if time.time() - last_time_get_point - time_paused > HINT_TIME and not paused:
-    #         draw_hint(hint)
+                        # Reset clicked tiles
+                        clicked_tiles = []
+        except:
+            pass
 
-    #     # Update tile selection logic
-    #     try:
-    #         tile_i, tile_j = get_index_at_mouse(mouse_x, mouse_y)
-    #         if board[tile_i][tile_j] != 0 and not paused:
-    #             draw_border_tile(board, tile_i, tile_j)
-    #             if mouse_clicked:
-    #                 mouse_clicked = False
-    #                 clicked_tiles.append((tile_i, tile_j))
-    #                 draw_clicked_tiles(board, clicked_tiles)
-    #                 if len(clicked_tiles) > 1:  # 2 cards were clicked
-    #                     path = bfs(board, clicked_tiles[0][0], clicked_tiles[0][1], tile_i, tile_j)
-    #                     if path:
-    #                         # Delete the same card
-    #                         board[clicked_tiles[0][0]][clicked_tiles[0][1]] = 0
-    #                         board[tile_i][tile_j] = 0
-    #                         success_sound.play(maxtime=1500)
-    #                         draw_path(path)
-
-    #                         bouns_time += 1
-    #                         last_time_get_point = time.time()  # Count time for hint
-
-    #                         # If level > 1, upgrade difficulty by moving cards
-    #                         update_difficulty(board, level, clicked_tiles[0][0], clicked_tiles[0][1], tile_i, tile_j)
-    #                         if is_level_complete(board):
-    #                             if level == 5:
-    #                                 pg.mixer.music.pause()
-    #                                 fade_speed = 2
-    #                                 alpha = 0
-    #                                 time_win = 10
-    #                                 tmp = time.time()
-    #                                 win_sound.play(maxtime=10000)
-    #                                 show_dim_screen()
-    #                                 while time.time() - tmp < 10:
-    #                                     alpha += fade_speed
-    #                                     if alpha > 255:
-    #                                         alpha = 255
-    #                                     tmp_image = WIN_BACKGROUND.copy()
-    #                                     tmp_image.set_alpha(alpha)
-    #                                     screen.blit(tmp_image, (180, 70))
-    #                                     pg.display.flip()
-    #                             return
-    #                         # If hint got by player
-    #                         if not (board[hint[0][0]][hint[0][1]] != 0 and bfs(board, hint[0][0], hint[0][1], hint[1][0], hint[1][1])):
-    #                             hint = get_hint(board)
-    #                             while not hint:
-    #                                 pg.time.wait(100)
-    #                                 reset_board(board)
-    #                                 hint = get_hint(board)
-    #                     else:
-    #                         if not (clicked_tiles[0][0] == clicked_tiles[1][0] and clicked_tiles[0][1] == clicked_tiles[1][1]):
-    #                             fail_sound.play(maxtime=500)
-
-    #                     # Reset clicked tiles
-    #                     clicked_tiles = []
-    #     except:
-    #         pass
-
-    #     pg.display.flip()
+        pg.display.flip()
 
 # Incorporates all the above functions to run the game: 
 def main():
