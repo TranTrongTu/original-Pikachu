@@ -50,7 +50,7 @@ LIVES_IMAGE = pg.transform.scale(pg.image.load("assets/images/heart.png"), (50, 
 FONT_COMICSANSMS = pg.font.SysFont('dejavusans', 40)
 FONT_TUROK = pg.font.SysFont('timesnewroman', 60)
 FONT_PIKACHU = pg.font.Font("assets/font/pikachu.otf", 50)
-FONT_ARIAL = pg.font.Font('assets/font/Folty-Bold.ttf', 50)
+FONT_ARIAL = pg.font.Font('assets/font/Folty-Bold.ttf', 30)
 
 # Start screen
 START_SCREEN_BACKGOUND = pg.transform.scale(pg.image.load("assets/images/background/b1g.jpg"), (SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -101,7 +101,7 @@ game_over_sound.set_volume(0.2)
 
 
 # working with hints: 
-current_hints = None # Store the current hint tiles
+current_hint = None  # Store the current hint tiles
 show_hint = None # flag if players want to show hints or not 
 
 # Gets top-left corner coordinates of a tile based on its row (i) and column (j):
@@ -236,6 +236,11 @@ def draw_hint_button(mouse_x, mouse_y, mouse_clicked, board):
             mouse_clicked = False
             current_hint = get_hint(board)
             if not current_hint:
+                # Display reshuffling message
+                message = FONT_COMICSANSMS.render("Reshuffling ", True, 'white')
+                screen.blit(message, (SCREEN_WIDTH // 2 - message.get_width() // 2, SCREEN_HEIGHT // 2))
+                pg.display.flip()
+                pg.time.wait(1000)  # Wait for 1 second
                 reset_board(board)
                 current_hint = get_hint(board)
             show_hint = True
@@ -343,7 +348,7 @@ def show_dim_screen():
 	pg.draw.rect(dim_screen, (0, 0, 0, 220), dim_screen.get_rect())
 	screen.blit(dim_screen, (0, 0))
 	
-# Displays the pause menu:
+# Displays the pause menu: 
 def panel_pause(mouse_x, mouse_y, mouse_clicked):
 	global lives, paused
 	panel_rect = pg.Rect(0, 0, *PAUSE_PANEL_IMAGE.get_size())
@@ -655,6 +660,5 @@ def main():
 			pg.time.wait(300)
 			pg.mixer.music.play()
 			#end
-
 if __name__ == '__main__':
 	main()
