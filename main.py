@@ -483,7 +483,7 @@ def start_screen():
 
 # Handles the main game loop where gameplay occurs:
 def playing():
-    global level, lives, paused, time_start_paused, last_time_get_point, time_paused
+    global level, lives, paused, time_start_paused, last_time_get_point, time_paused, current_hint, show_hint
     paused = False
     time_start_paused = 0
     time_paused = 0
@@ -511,13 +511,13 @@ def playing():
         draw_time_bar(start_time, bouns_time)
         draw_clicked_tiles(board, clicked_tiles)
 
-     # if player click a hint button
+        # If player clicks the hint button
         if show_hint and current_hint:
             draw_hint(current_hint)
-        
+
         # Initialize mouse clicked flag
         mouse_clicked = False
-        
+
         if lives == 0:
             show_dim_screen()
             level = MAX_LEVEL + 1
@@ -528,7 +528,7 @@ def playing():
                 screen.blit(GAMEOVER_BACKGROUND, (0, 0))
                 pg.display.flip()
             return
-        
+
         # Handle events
         for event in pg.event.get():
             if event.type == pg.QUIT:
@@ -557,12 +557,11 @@ def playing():
                             pg.time.wait(100)
                             reset_board(board)
                             hint = get_hint(board)
-                
-        # draw pause button and hint button 
+
+        # Draw pause button and hint button
         mouse_clicked = draw_pause_button(mouse_x, mouse_y, mouse_clicked)
         mouse_clicked = draw_hint_button(mouse_x, mouse_y, mouse_clicked, board)
-	
- 
+
         is_time_up = check_time(start_time, bouns_time)  # 0 if game over, 1 if lives -= 1, 2 if nothing
         if paused:
             show_dim_screen()
@@ -585,7 +584,6 @@ def playing():
             elif select == 2:
                 mouse_clicked = False  # continue
 
-
         # Update tile selection logic
         try:
             tile_i, tile_j = get_index_at_mouse(mouse_x, mouse_y)
@@ -607,9 +605,9 @@ def playing():
                             bouns_time += 1
                             last_time_get_point = time.time()  # Count time for hint
 
-                            show_hint = False # reset hint when tiles are matched
-                            
-                            current_hint = None 
+                            show_hint = False  # reset hint when tiles are matched
+                            current_hint = None
+
                             # If level > 1, upgrade difficulty by moving cards
                             update_difficulty(board, level, clicked_tiles[0][0], clicked_tiles[0][1], tile_i, tile_j)
                             if is_level_complete(board):
