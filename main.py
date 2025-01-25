@@ -416,9 +416,12 @@ def save_players(filename="players.json"):
     with open(filename, "w") as file:
         json.dump(players_data, file, indent=4)
 
+PROFILE_BUTTON = pg.image.load("assets/images/button/profile.png").convert_alpha()
+SHOW_PROFILE_PANEL = False
+
 # Displays the starting screen:
 def start_screen():
-	global sound_on, music_on, show_instruction, current_player
+	global sound_on, music_on, show_instruction, current_player, SHOW_PROFILE_PANEL
 
 	load_players()  # Load players when the game starts
 
@@ -457,6 +460,19 @@ def start_screen():
 		player_text = FONT_ARIAL.render(f"Player: {current_player}", True, 'white')
 		screen.blit(player_text, (10, 10))
 		
+		# Draw new Profile button
+		profile_rect = pg.Rect(0, 0, *PROFILE_BUTTON.get_size())
+		profile_rect.center = (SCREEN_WIDTH // 2, (SCREEN_HEIGHT // 2) + 80)
+		screen.blit(PROFILE_BUTTON, profile_rect)
+
+		# When the profile panel is open, show an overlay with user info
+		if SHOW_PROFILE_PANEL:
+			show_dim_screen()
+			info_text = FONT_ARIAL.render(f"User info: {current_player}", True, 'white')
+			panel_x = (SCREEN_WIDTH - 400) // 2
+			panel_y = (SCREEN_HEIGHT - 200) // 2
+			pg.draw.rect(screen, (50, 50, 50), (panel_x, panel_y, 400, 200), border_radius=10)
+			screen.blit(info_text, (panel_x + 20, panel_y + 80))
 	
 		if show_instruction:
 			show_dim_screen()
@@ -476,6 +492,9 @@ def start_screen():
 
 		if exit_rect.collidepoint(mouse_x, mouse_y) and show_instruction:
 				draw_dark_image(EXIT_IMAGE, exit_rect, (60, 60, 60))
+
+		if profile_rect.collidepoint(mouse_x, mouse_y) and not show_instruction:
+			draw_dark_image(PROFILE_BUTTON, profile_rect, (60, 60, 60))
 
 		# handle every events by step by step 
 		for event in pg.event.get():
@@ -515,6 +534,11 @@ def start_screen():
 				if exit_rect.collidepoint(mouse_x, mouse_y):
 					show_instruction = False
 					click_sound.play()
+				if profile_rect.collidepoint((mouse_x, mouse_y)) and not show_instruction:
+					click_sound.play()
+					SHOW_PROFILE_PANEL = not SHOW_PROFILE_PANEL  # toggle panel visibility
+					pg.display.flip()
+					pg.time.wait(200)
 				
     
     	
