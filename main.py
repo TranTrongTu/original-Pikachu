@@ -1,6 +1,7 @@
 import random, collections, time, sys, copy
 import pygame as pg
 from BFS import bfs
+import json  # Added import for JSON handling
 
 pg.init()
 pg.font.init()
@@ -62,7 +63,7 @@ LIST_LEVEL = [pg.transform.scale(pg.image.load("assets/images/level/" + str(i) +
 LOGO_IMAGE = pg.transform.scale(pg.image.load("assets/images/logo/logo_home.png"), (600, 200))
 
 # PLAY_IMAGE = pg.transform.scale(pg.image.load("assets/images/button/play.png"), (144, 48))
-PLAY_IMAGE = pg.image.load("assets/images/button/play.png")
+PLAY_IMAGE = pg.image.load("assets/images/button/continue_start.png")
 
 SOUND_IMAGE = pg.transform.scale(pg.image.load("assets/images/button/sound.png"), (50, 50))
 INFO_IMAGE = pg.transform.scale(pg.image.load("assets/images/button/info.png"), (50, 50))
@@ -78,6 +79,16 @@ WIN_BACKGROUND = pg.image.load("assets/images/button/win1.png").convert_alpha()
 INSTRUCTION_PANEL = pg.transform.scale(pg.image.load("assets/images/button/instruction.png"), (700, 469)).convert_alpha()
 TIME_END = 6
 show_instruction = False
+# Nút mới adđ vào:
+NEW_GAME_BUTTON = pg.transform.scale(pg.image.load("assets/images/button/new_game.png"), (180, 72)).convert_alpha()
+CONTINUE_BUTTON_START = pg.transform.scale(pg.image.load("assets/images/button/continue_start.png"), (180, 72)).convert_alpha()
+SIGN_IN_BUTTON = pg.transform.scale(pg.image.load("assets/images/button/sign_in.png"), (180, 72)).convert_alpha()
+WARNING_PANEL = pg.transform.scale(pg.image.load("assets/images/button/warning_panel.png"), (700, 469)).convert_alpha()
+SIGN_IN_PANEL = pg.transform.scale(pg.image.load("assets/images/button/sign_in_panel.png"), (700, 469)).convert_alpha()
+PROCEED_BUTTON = pg.image.load("assets/images/button/proceed.png").convert_alpha()
+USER_BACKGROUND = pg.image.load("assets/images/button/user_background.png")
+current_player = "[Guest]"
+players_data = {}  # Dictionary to store players' information
 
 RESET_BUTTON = pg.image.load("assets/images/button/replay.png")
 
@@ -237,7 +248,7 @@ def draw_hint_button(mouse_x, mouse_y, mouse_clicked, board):
             current_hint = get_hint(board)
             if not current_hint:
                 # Display reshuffling message
-                message = FONT_COMICSANSMS.render("Reshuffling ", True, 'white')
+                message = FONT_ARIAL.render("Reshuffling ", True, 'white')
                 screen.blit(message, (SCREEN_WIDTH // 2 - message.get_width() // 2, SCREEN_HEIGHT // 2))
                 pg.display.flip()
                 pg.time.wait(1000)  # Wait for 1 second
@@ -388,9 +399,29 @@ def panel_pause(mouse_x, mouse_y, mouse_clicked):
 
 	return 3
 
+# Function to load player information
+def load_players(filename="players.json"):
+    global players_data, current_player
+    try:
+        with open(filename, "r") as file:
+            players_data = json.load(file)
+            current_player = players_data.get("current_player", "[Guest]")
+    except FileNotFoundError:
+        players_data = {"current_player": "[Guest]", "players": {}}
+        save_players(filename)
+
+# Function to save player information
+def save_players(filename="players.json"):
+    players_data["current_player"] = current_player
+    with open(filename, "w") as file:
+        json.dump(players_data, file, indent=4)
+
 # Displays the starting screen:
 def start_screen():
-	global sound_on, music_on, show_instruction
+	global sound_on, music_on, show_instruction, current_player
+
+	load_players()  # Load players when the game starts
+
 	while True:
 		
 		Time.tick(FPS)
@@ -422,6 +453,9 @@ def start_screen():
 		image_width, image_height = EXIT_IMAGE.get_size()
 		exit_rect = pg.Rect(SCREEN_WIDTH - 220, 105, image_width, image_height)
 
+		# Display current player
+		player_text = FONT_ARIAL.render(f"Player: {current_player}", True, 'white')
+		screen.blit(player_text, (10, 10))
 		
 	
 		if show_instruction:
@@ -446,6 +480,7 @@ def start_screen():
 		# handle every events by step by step 
 		for event in pg.event.get():
 			if event.type == pg.QUIT:
+				save_players()
 				pg.quit()
 				sys.exit()
 			# if mouse is clicked
