@@ -18,9 +18,9 @@ screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 LIST_BACKGROUND = [pg.transform.scale(pg.image.load("assets/images/background/" + str(i) + ".jpg"), (SCREEN_WIDTH, SCREEN_HEIGHT)) for i in range(10)]
 
 # Board configuration:
-BOARD_ROW = 9 #7
-BOARD_COLUMN = 14 #12
-NUM_TILE_ON_BOARD = 21
+BOARD_ROW = 7 #7
+BOARD_COLUMN = 12 #12
+NUM_TILE_ON_BOARD = 33
 NUM_SAME_TILE = 4
 
 TILE_WIDTH = 50
@@ -455,7 +455,7 @@ def start_screen():
 
 		# Player status text
 		display_name = current_player
-		USER_BACKGROUND = pg.transform.scale(USER_BACKGROUND, (len(display_name)*20 + 160, 72))
+		USER_BACKGROUND = pg.transform.scale(USER_BACKGROUND, (len(display_name)*20 + 180, 72))
 		user_background_rect = USER_BACKGROUND.get_rect(center=(SCREEN_WIDTH // 2, (SCREEN_HEIGHT - image_height) // 2 + 60))
 		screen.blit(USER_BACKGROUND, user_background_rect)
 		player_text = FONT_ARIAL.render(f"Playing as {display_name}", True, (0, 0, 0))
@@ -578,10 +578,16 @@ def start_screen():
 					if verify_player(name_input, password_input):
 						current_player = name_input
 						show_sign_in = False
+						name_input = "" # reset input for the next time
+						password_input = ""
+						sign_in_error = ""
 					else:
 						if add_player(name_input, password_input):
 							current_player = name_input
 							show_sign_in = False
+							name_input = "" # reset input for the next time
+							password_input = ""
+							sign_in_error = ""
 						else:
 							if name_input == "[Guest]":
 								sign_in_error = "Leave password blank to play as [Guest]"
