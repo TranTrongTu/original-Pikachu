@@ -1,4 +1,4 @@
-import random, collections, time, sys, copy
+import random, collections, time, sys, copy, json
 import pygame as pg
 from BFS import bfs
 
@@ -77,6 +77,19 @@ CONTINUE_BUTTON = pg.image.load("assets/images/button/continue.png").convert_alp
 GAMEOVER_BACKGROUND = pg.image.load("assets/images/button/gameover.png").convert_alpha()
 WIN_BACKGROUND = pg.image.load("assets/images/button/win1.png").convert_alpha()
 INSTRUCTION_PANEL = pg.transform.scale(pg.image.load("assets/images/button/instruction.png"), (700, 469)).convert_alpha()
+
+# Nút mới adđ vào:
+NEW_GAME_BUTTON = pg.transform.scale(pg.image.load("assets/images/button/new_game.png"), (180, 72)).convert_alpha()
+CONTINUE_BUTTON_START = pg.transform.scale(pg.image.load("assets/images/button/continue_start.png"), (180, 72)).convert_alpha()
+SIGN_IN_BUTTON = pg.transform.scale(pg.image.load("assets/images/button/sign_in.png"), (180, 72)).convert_alpha()
+WARNING_PANEL = pg.transform.scale(pg.image.load("assets/images/button/warning_panel.png"), (700, 469)).convert_alpha()
+SIGN_IN_PANEL = pg.transform.scale(pg.image.load("assets/images/button/sign_in_panel.png"), (700, 469)).convert_alpha()
+PROCEED_BUTTON = pg.image.load("assets/images/button/proceed.png").convert_alpha()
+USER_BACKGROUND = pg.image.load("assets/images/button/user_background.png")
+
+current_player = "[Guest]"
+
+
 TIME_END = 6
 show_instruction = False
 
@@ -388,37 +401,96 @@ def panel_pause(mouse_x, mouse_y, mouse_clicked):
 
 	return 3
 
+# Sign-in system functions:
+def load_players():
+    try:
+        with open('players.json', 'r') as f:
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                # If file is empty or corrupted, return empty dict
+                return {}
+    except FileNotFoundError:
+        # If file doesn't exist, create it with empty dict
+        with open('players.json', 'w') as f:
+            json.dump({}, f)
+        return {}
+
+def save_players(players):
+    with open('players.json', 'w') as f:
+        json.dump(players, f)
+
+def verify_player(name, password):
+    players = load_players()
+    if name in players:
+        return players[name]["password"] == password
+    return False
+
+def add_player(name, password):
+    players = load_players()
+    if name not in players:
+        players[name] = {"password": password}
+        save_players(players)
+        return True
+    return False
+
 # Displays the starting screen:
 def start_screen():
-	global sound_on, music_on, show_instruction
+	global sound_on, music_on, show_instruction, current_player, USER_BACKGROUND
+	show_warning = False
+	show_sign_in = False
+	sign_in_error = ""
+	name_input = ""
+	password_input = ""
+	input_active = "name"  # or "password"
 	while True:
 		
 		Time.tick(FPS)
 		screen.blit(START_SCREEN_BACKGOUND, (0, 0))
   
-		# blit logo text
+		# Logo
 		image_width, image_height = LOGO_IMAGE.get_size()
-		screen.blit(LOGO_IMAGE, ((SCREEN_WIDTH - image_width) // 2 - 20, (SCREEN_HEIGHT - image_height) // 2 - 150))
-		mouse_x, mouse_y = pg.mouse.get_pos()
+		screen.blit(LOGO_IMAGE, ((SCREEN_WIDTH - image_width) // 2 - 20, (SCREEN_HEIGHT - image_height) // 2 - 175))
+		
 
-		# blit play button
-		image_width, image_height = PLAY_IMAGE.get_size()
-		play_rect = pg.Rect((SCREEN_WIDTH - image_width) // 2, (SCREEN_HEIGHT - image_height) // 2, image_width, image_height)
-		screen.blit(PLAY_IMAGE, play_rect)
+		# Player status text
+		display_name = "[Guest]"
+		USER_BACKGROUND = pg.transform.scale(USER_BACKGROUND, (len(display_name)*20 + 160, 72))
+		user_background_rect = USER_BACKGROUND.get_rect(center=(SCREEN_WIDTH // 2, (SCREEN_HEIGHT - image_height) // 2 + 60))
+		screen.blit(USER_BACKGROUND, user_background_rect)
+		player_text = FONT_ARIAL.render(f"Playing as {display_name}", True, (0, 0, 0))
+		text_rect = player_text.get_rect(center=(SCREEN_WIDTH // 2, (SCREEN_HEIGHT - image_height) // 2 + 60))
+		screen.blit(player_text, text_rect)
 
-		#blit sound on button
+		# Main menu buttons - vertically stacked
+		base_y = (SCREEN_HEIGHT - image_height) // 2 + 150
+		button_spacing = 75  # Adjust this value to control spacing between buttons
+        
+		new_game_rect = NEW_GAME_BUTTON.get_rect(center=(SCREEN_WIDTH // 2, base_y))
+		continue_rect = CONTINUE_BUTTON_START.get_rect(center=(SCREEN_WIDTH // 2, base_y + button_spacing))
+		sign_in_rect = SIGN_IN_BUTTON.get_rect(center=(SCREEN_WIDTH // 2, base_y + button_spacing * 2))
+
+		screen.blit(NEW_GAME_BUTTON, new_game_rect)
+		if current_player == "[Guest]":
+			draw_dark_image(CONTINUE_BUTTON_START, continue_rect, (120, 120, 120))
+		else:
+			screen.blit(CONTINUE_BUTTON_START, continue_rect)
+		screen.blit(SIGN_IN_BUTTON, sign_in_rect)
+
+		# Sound on button
 		image_width, image_height = SOUND_IMAGE.get_size()
 		sound_rect = pg.Rect(15, SCREEN_HEIGHT - 15 - image_height, image_width, image_height)
 		if sound_on:
 			screen.blit(SOUND_IMAGE, sound_rect)
-		else: draw_dark_image(SOUND_IMAGE, sound_rect, (120, 120, 120))
+		else: 
+			draw_dark_image(SOUND_IMAGE, sound_rect, (120, 120, 120))
 
-		# blit info button
+		# Info button
 		image_width, image_height = INFO_IMAGE.get_size()
 		info_rect = pg.Rect(SCREEN_WIDTH - 15 - image_width, SCREEN_HEIGHT - 15 - image_height, image_width, image_height)
 		screen.blit(INFO_IMAGE, info_rect)
 
-		# blit exit button
+		# Exit button
 		image_width, image_height = EXIT_IMAGE.get_size()
 		exit_rect = pg.Rect(SCREEN_WIDTH - 220, 105, image_width, image_height)
 
@@ -429,9 +501,17 @@ def start_screen():
 			draw_instruction()
 			screen.blit(EXIT_IMAGE, exit_rect)
 
-		# Check collide with mouse
-		if play_rect.collidepoint(mouse_x, mouse_y) and not show_instruction:
-			draw_dark_image(PLAY_IMAGE, play_rect, (60, 60, 60))
+		mouse_x, mouse_y = pg.mouse.get_pos()
+
+		# Check collide with mouse:
+		if new_game_rect.collidepoint(mouse_x, mouse_y) and not show_instruction:
+			draw_dark_image(NEW_GAME_BUTTON, new_game_rect, (60, 60, 60))
+        
+		if continue_rect.collidepoint(mouse_x, mouse_y) and not show_instruction and current_player != "[Guest]":
+			draw_dark_image(CONTINUE_BUTTON_START, continue_rect, (60, 60, 60))
+            
+		if sign_in_rect.collidepoint(mouse_x, mouse_y) and not show_instruction:
+			draw_dark_image(SIGN_IN_BUTTON, sign_in_rect, (60, 60, 60))
 		
 		if sound_rect.collidepoint(mouse_x, mouse_y) and not show_instruction:
 			if sound_on:
@@ -443,30 +523,39 @@ def start_screen():
 		if exit_rect.collidepoint(mouse_x, mouse_y) and show_instruction:
 				draw_dark_image(EXIT_IMAGE, exit_rect, (60, 60, 60))
 
+		# Event handling:
 		for event in pg.event.get():
 			if event.type == pg.QUIT:
 				pg.quit()
 				sys.exit()
+                
 			if event.type == pg.MOUSEBUTTONDOWN:
 				mouse_x, mouse_y = event.pos
 
-				# Play button clicked:
-				if play_rect.collidepoint((mouse_x, mouse_y)):
+				if new_game_rect.collidepoint(mouse_x, mouse_y) and not show_instruction:
 					click_sound.play()
-					draw_dark_image(PLAY_IMAGE, play_rect, (120, 120, 120))
-					pg.display.flip()
-					pg.time.wait(200)
-					return
- 
-				# Sound button clicked:
-				if sound_rect.collidepoint(mouse_x, mouse_y):
+					if current_player == "[Guest]":
+						show_warning = True
+					else:
+						return "new_game"
+                        
+				elif continue_rect.collidepoint(mouse_x, mouse_y) and not show_instruction and current_player != "[Guest]":
+					click_sound.play()
+					return "continue"
+                    
+				elif sign_in_rect.collidepoint(mouse_x, mouse_y) and not show_instruction:
+					click_sound.play()
+					show_sign_in = True
+
+				# Sound button clicked
+				elif sound_rect.collidepoint(mouse_x, mouse_y) and not show_instruction:
 					if sound_on:
 						sound_on = False
 						pg.mixer.music.set_volume(0)
 						success_sound.set_volume(0)
 						fail_sound.set_volume(0)
 						click_sound.set_volume(0)
-						
+
 					else:
 						sound_on = True
 						pg.mixer.music.set_volume(0.1)
@@ -474,16 +563,101 @@ def start_screen():
 						fail_sound.set_volume(0.2)
 						click_sound.set_volume(0.2)
 
-				# Info button clicked:	
-				if info_rect.collidepoint(mouse_x, mouse_y):
+				# Info button clicked
+				elif info_rect.collidepoint(mouse_x, mouse_y) and not show_instruction:
 					show_instruction = True
 					click_sound.play()
-				if exit_rect.collidepoint(mouse_x, mouse_y):
+				elif exit_rect.collidepoint(mouse_x, mouse_y) and show_instruction:
 					show_instruction = False
 					click_sound.play()
-				
-    
-    	
+                    
+			if event.type == pg.KEYDOWN and show_sign_in:
+				if event.key == pg.K_TAB:
+					input_active = "password" if input_active == "name" else "name"
+				elif event.key == pg.K_RETURN:
+					if verify_player(name_input, password_input):
+						current_player = name_input
+						show_sign_in = False
+					else:
+						if add_player(name_input, password_input):
+							current_player = name_input
+							show_sign_in = False
+						else:
+							if name_input == "[Guest]":
+								sign_in_error = "Leave password blank to play as [Guest]"
+							else:
+								sign_in_error = "Incorrect password"
+							fail_sound.play()
+				elif event.key == pg.K_BACKSPACE:
+					if input_active == "name":
+						name_input = name_input[:-1]
+					else:
+						password_input = password_input[:-1]
+				else:
+					if input_active == "name":
+						name_input += event.unicode
+					else:
+						password_input += event.unicode
+
+		# Draw panels if needed
+		if show_warning:
+			show_dim_screen()
+			warning_rect = WARNING_PANEL.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+			screen.blit(WARNING_PANEL, warning_rect)
+			proceed_rect = PROCEED_BUTTON.get_rect(center=(warning_rect.centerx, warning_rect.bottom - 50))
+			screen.blit(PROCEED_BUTTON, proceed_rect)
+			
+			if proceed_rect.collidepoint(mouse_x, mouse_y):
+				if pg.mouse.get_pressed()[0]:
+					return "new_game"
+
+		if show_sign_in:
+			show_dim_screen()
+			panel_rect = SIGN_IN_PANEL.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+			screen.blit(SIGN_IN_PANEL, panel_rect)
+
+			# Draw labels
+			username_label = FONT_ARIAL.render("USERNAME:", True, (0, 0, 0))  # Changed to black
+			password_label = FONT_ARIAL.render("PASSWORD:", True, (0, 0, 0))  # Changed to black
+
+			# Position labels with reduced spacing
+			screen.blit(username_label, (panel_rect.centerx - 200, panel_rect.centery - 65))
+			screen.blit(password_label, (panel_rect.centerx - 200, panel_rect.centery - 5))
+
+			# Draw input fields and text
+			name_text = FONT_ARIAL.render(name_input, True, (0, 0, 0))  # Changed to black
+			password_text = FONT_ARIAL.render("*" * len(password_input), True, (0, 0, 0))  # Changed to black
+
+			name_rect = name_text.get_rect(center=(panel_rect.centerx + 50, panel_rect.centery - 55))
+			password_rect = password_text.get_rect(center=(panel_rect.centerx + 50, panel_rect.centery + 5))
+
+			screen.blit(name_text, name_rect)
+			screen.blit(password_text, password_rect)
+
+			# Draw active input indicator
+			if input_active == "name":
+				pg.draw.line(screen, (0, 0, 0),  
+							(name_rect.right + 5, name_rect.top), 
+							(name_rect.right + 5, name_rect.bottom), 2)
+			else:
+				pg.draw.line(screen, (0, 0, 0), 
+							(password_rect.right + 5, password_rect.top), 
+							(password_rect.right + 5, password_rect.bottom), 2)
+
+			# Draw error message if any
+			if sign_in_error:
+				error_text = FONT_ARIAL.render(sign_in_error, True, (255, 0, 0))  # Keep error in red
+				error_rect = error_text.get_rect(center=(panel_rect.centerx, panel_rect.centery - 105))
+				screen.blit(error_text, error_rect)
+
+			# Add instruction text
+			instruction_guest = FONT_ARIAL.render("Enter [Guest] in USERNAME to play as [Guest].", True, (0, 0, 0))
+			guest_rect = instruction_guest.get_rect(center=(panel_rect.centerx, panel_rect.centery + 85))
+			screen.blit(instruction_guest, guest_rect)
+			instruction_text = FONT_ARIAL.render("Press TAB to switch fields, ENTER to confirm.", True, (0, 0, 0))  
+			instruction_rect = instruction_text.get_rect(center=(panel_rect.centerx, panel_rect.centery + 135))
+			screen.blit(instruction_text, instruction_rect)
+
 		pg.display.flip()
 
 
@@ -566,6 +740,7 @@ def playing():
 		
 
 		is_time_up = check_time(start_time, bouns_time) # 0 if game over, 1 if lives -= 1, 2 if nothing
+  
 		if paused:
 			show_dim_screen()
 			if is_time_up == 0: #game over
@@ -648,14 +823,17 @@ def main():
 	while True:
 		level = 1
 		lives = 3
-		start_screen()
-		while level <= MAX_LEVEL:
-			random.shuffle(LIST_BACKGROUND)
-			playing()
-			level += 1
-			pg.time.wait(300)
-			pg.mixer.music.play()
-			#end
+		action = start_screen()
+
+		if action == "new_game":
+			while level <= MAX_LEVEL:
+				random.shuffle(LIST_BACKGROUND)
+				playing()
+				level += 1
+				pg.time.wait(300)
+				pg.mixer.music.play()
+		elif action == "continue":
+			pass
 
 if __name__ == '__main__':
 	main()
