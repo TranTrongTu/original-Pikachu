@@ -454,7 +454,7 @@ def start_screen():
 		
 
 		# Player status text
-		display_name = "[Guest]"
+		display_name = current_player
 		USER_BACKGROUND = pg.transform.scale(USER_BACKGROUND, (len(display_name)*20 + 160, 72))
 		user_background_rect = USER_BACKGROUND.get_rect(center=(SCREEN_WIDTH // 2, (SCREEN_HEIGHT - image_height) // 2 + 60))
 		screen.blit(USER_BACKGROUND, user_background_rect)
@@ -606,7 +606,18 @@ def start_screen():
 			screen.blit(WARNING_PANEL, warning_rect)
 			proceed_rect = PROCEED_BUTTON.get_rect(center=(warning_rect.centerx, warning_rect.bottom - 50))
 			screen.blit(PROCEED_BUTTON, proceed_rect)
+   
+			# add exit button
+			exit_warning_rect = EXIT_IMAGE.get_rect(topright=(warning_rect.topright[0] - 20, warning_rect.topright[1] + 20))
+			screen.blit(EXIT_IMAGE, exit_warning_rect)
 			
+   			# Check if exit button is hover 
+			if exit_warning_rect.collidepoint(mouse_x, mouse_y):
+				draw_dark_image(EXIT_IMAGE, exit_warning_rect, (60, 60, 60))
+				if pg.mouse.get_pressed()[0]:
+					show_warning = False
+					click_sound.play()
+     
 			if proceed_rect.collidepoint(mouse_x, mouse_y):
 				if pg.mouse.get_pressed()[0]:
 					return "new_game"
@@ -615,7 +626,20 @@ def start_screen():
 			show_dim_screen()
 			panel_rect = SIGN_IN_PANEL.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
 			screen.blit(SIGN_IN_PANEL, panel_rect)
-
+   
+			# add exit button
+			exit_sign_in_rect = EXIT_IMAGE.get_rect(topright=(panel_rect.topright[0] - 20, panel_rect.topright[1] + 20))
+			screen.blit(EXIT_IMAGE, exit_sign_in_rect)
+			
+   			# Check if exit button is hover 
+			if exit_sign_in_rect.collidepoint(mouse_x, mouse_y):
+				draw_dark_image(EXIT_IMAGE, exit_sign_in_rect, (60, 60, 60))
+				if pg.mouse.get_pressed()[0]:
+					show_sign_in = False
+					sign_in_error = ""  # Clear any error messages
+					name_input = ""     # Clear input fields
+					password_input = ""
+					click_sound.play()
 			# Draw labels
 			username_label = FONT_ARIAL.render("USERNAME:", True, (0, 0, 0))  # Changed to black
 			password_label = FONT_ARIAL.render("PASSWORD:", True, (0, 0, 0))  # Changed to black
